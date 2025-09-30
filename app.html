@@ -353,8 +353,8 @@
 
         function showShortLinkFallback(userId) {
              const linkDisplayArea = document.getElementById('link-display-area');
-             const longUrl = `https://sharenplay.vercel.app/loading.html?id=${userId}/`;
-             const displayUrl = longUrl.replace('https://', '');
+             const longUrl = `https://sharenplay.vercel.app/loading.html?id=${userId}`;
+             const displayUrl = longUrl.replace('@', '');
 
              linkDisplayArea.innerHTML = `
                 <p>Link Reveal: 
@@ -404,7 +404,7 @@
     }
 
     linkDisplayArea.innerHTML = `<p>Link Reveal: <span class="font-semibold text-cyan-400">Membuat link...</span></p>`;
-    const longUrl = `https://sharenplay.vercel.app/loading.html?id=${userId}/`;
+    const longUrl = `https://sharenplay.vercel.app/loading.html?id=${userId}`;
 
     try {
         // panggil API route di Vercel, bukan langsung Dub.co
@@ -420,7 +420,7 @@
             throw new Error(data.error || 'Gagal membuat short link.');
         }
 
-        const displayUrl = data.shortUrl.replace('https://', '');
+        const displayUrl = data.shortUrl.replace('@', '');
         localStorage.setItem(localStorageKey, displayUrl);
 
         linkDisplayArea.innerHTML = `
