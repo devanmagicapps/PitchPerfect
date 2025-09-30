@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Pitch Perfect - Admin Panel</title>
+    
+    <meta name="theme-color" content="#111827">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Lora:wght@500;600&display=swap" rel="stylesheet">
+    
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+    <style>
+        html, body { overflow: hidden; height: 100%; width: 100%; position: fixed; }
+        body { font-family: 'Inter', sans-serif; -webkit-user-select: none; user-select: none; background-color: #030712; }
+        h1, h2, h3 { font-family: 'Lora', serif; }
+        
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #374151; border-radius: 10px; }
+        
+        .screen { display: none; }
+        .screen.active { display: flex; animation: fadeIn 0.5s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        
+        .input-group { position: relative; }
+        .input-group svg { position: absolute; left: 0.85rem; top: 50%; transform: translateY(-50%); color: #6b7280; transition: color 0.2s; }
+        .input-group input { padding-left: 2.75rem; }
+        .form-input { background-color: #1f2937; border: 1px solid #374151; transition: all 0.2s ease-in-out; border-left-width: 1px; }
+        .input-group:focus-within svg { color: #22d3ee; }
+        .form-input:focus { outline: none; border-color: #374151; border-left-color: #22d3ee; border-left-width: 3px; box-shadow: 0 0 15px -3px rgba(34, 211, 238, 0.2); }
+
+        @keyframes soundwave { 0% { transform: scaleY(0.4); } 20% { transform: scaleY(1); } 40% { transform: scaleY(0.4); } 100% { transform: scaleY(0.4); } }
+        .sound-bar { width: 4px; height: 32px; background-color: #22d3ee; animation: soundwave 1.2s ease-in-out infinite; }
+        .sound-bar:nth-child(2) { animation-delay: 0.1s; } .sound-bar:nth-child(3) { animation-delay: 0.2s; } .sound-bar:nth-child(4) { animation-delay: 0.3s; }
+    </style>
+</head>
+<body class="text-gray-200 flex items-center justify-center p-4">
+
+    <!-- Loading Screen (Hanya untuk transisi saat sudah login) -->
+    <div id="loader" class="screen absolute inset-0 bg-gray-900 justify-center items-center">
+        <div class="flex items-center justify-center space-x-2"><div class="sound-bar"></div><div class="sound-bar"></div><div class="sound-bar"></div><div class="sound-bar"></div></div>
+    </div>
+
+    <!-- Login Screen (Default) -->
+    <div id="login-screen" class="screen w-full max-w-sm justify-center items-center">
+        <div class="bg-gray-800 border border-gray-700 rounded-2xl shadow-2xl w-full p-8 space-y-6">
+            <div class="text-center mb-6">
+                <h1 class="text-3xl font-bold text-white">Admin Access</h1>
+                <p class="text-gray-400">Silakan login untuk melanjutkan.</p>
+            </div>
+            <div class="space-y-4">
+                <div class="input-group"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg><input id="login-email" type="email" placeholder="Email Admin" class="form-input w-full p-3 rounded-lg text-gray-200"></div>
+                <div class="input-group"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg><input id="login-password" type="password" placeholder="Password" class="form-input w-full p-3 rounded-lg text-gray-200"></div>
+                <button id="login-btn" class="w-full bg-cyan-500 text-gray-900 font-semibold py-3 rounded-lg hover:bg-cyan-400 active:bg-cyan-600 transition-all shadow-lg shadow-cyan-500/20 disabled:opacity-50 disabled:cursor-wait">Login</button>
+            </div>
+            <p id="login-status" class="text-center text-sm h-5 text-red-400 font-semibold"></p>
+        </div>
+    </div>
+
+    <!-- Access Denied Screen -->
+    <div id="denied-screen" class="screen text-center">
+        <div>
+            <h1 class="text-4xl text-red-400">Akses Ditolak</h1>
+            <p class="text-gray-400 mt-2">Anda tidak memiliki hak akses untuk halaman ini.</p>
+        </div>
+    </div>
+
+    <!-- Admin Panel Screen -->
+    <div id="admin-panel-screen" class="screen w-full max-w-4xl h-full">
+        <div class="bg-gray-800 border border-gray-700 rounded-2xl w-full flex flex-col max-h-[95vh]">
+            <div class="flex-shrink-0 p-6 border-b border-gray-700 flex justify-between items-center">
+                <div><h1 class="text-2xl font-bold text-white">Admin Panel</h1><p class="text-sm text-cyan-400">Pitch Perfect Management</p></div>
+                <button id="logout-btn" title="Logout" class="text-gray-500 hover:text-red-500 transition-colors"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg></button>
+            </div>
+            <div class="flex-grow p-6 grid grid-cols-1 md:grid-cols-3 gap-6 overflow-y-auto custom-scrollbar">
+                <div class="space-y-4 bg-gray-900/50 p-4 rounded-lg border border-gray-700">
+                    <h2 class="text-lg font-semibold text-white border-b border-gray-700 pb-2">Manajemen Lisensi</h2>
+                    <button id="generate-license-btn" class="w-full bg-cyan-500 text-gray-900 font-semibold py-2 rounded-lg hover:bg-cyan-400 transition-all text-sm">Buat Lisensi Baru</button>
+                    <div id="new-license-display" class="text-center p-2 bg-gray-700 rounded h-10 flex items-center justify-center font-mono"></div>
+                    <h3 class="text-md font-semibold text-gray-300 pt-2">Lisensi Aktif</h3>
+                    <div id="active-licenses-list" class="space-y-2 text-sm max-h-48 overflow-y-auto custom-scrollbar pr-2"></div>
+                    <h3 class="text-md font-semibold text-gray-300 pt-2">Lisensi Terpakai</h3>
+                    <div id="used-licenses-list" class="space-y-2 text-sm max-h-48 overflow-y-auto custom-scrollbar pr-2"></div>
+                </div>
+                <div class="md:col-span-2 space-y-4 bg-gray-900/50 p-4 rounded-lg border border-gray-700">
+                    <h2 class="text-lg font-semibold text-white border-b border-gray-700 pb-2">Manajemen Pengguna</h2>
+                    <div id="users-list" class="space-y-2 text-sm max-h-96 overflow-y-auto custom-scrollbar pr-2"></div>
+                </div>
+            </div>
+             <p id="panel-status" class="flex-shrink-0 text-center text-sm p-2 h-8 font-semibold"></p>
+        </div>
+    </div>
+    
+    <!-- Confirmation Modal -->
+    <div id="confirmation-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm items-center justify-center hidden"><div class="bg-gray-800 border border-gray-700 rounded-lg shadow-xl p-6 w-full max-w-sm text-center space-y-4"><h2 id="modal-title" class="text-xl font-bold text-white"></h2><p id="modal-body" class="text-gray-300"></p><div class="flex justify-center gap-4 pt-2"><button id="modal-cancel-btn" class="bg-gray-600 hover:bg-gray-500 text-white font-semibold py-2 px-6 rounded-lg transition-all">Batal</button><button id="modal-confirm-btn" class="bg-red-600 hover:bg-red-500 text-white font-semibold py-2 px-6 rounded-lg transition-all">Konfirmasi</button></div></div></div>
+
+    <script>
+       const firebaseConfig = {
+
+  apiKey: "AIzaSyCUmdnxFqYoi5Uj2809G0Pfd78nUdslG0M",
+
+  authDomain: "pitch-perfect-magic.firebaseapp.com",
+
+  databaseURL: "https://pitch-perfect-magic-default-rtdb.asia-southeast1.firebasedatabase.app",
+
+  projectId: "pitch-perfect-magic",
+
+  storageBucket: "pitch-perfect-magic.firebasestorage.app",
+
+  messagingSenderId: "298805847665",
+
+  appId: "1:298805847665:web:de8afedb832e38daeaddd0"
+
+};
+
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.database();
+
+        const ADMIN_UIDS = ['4ATFmSq0QaV8RcGOU0lJZwLNTZi2', 'kTkzDSFOIvPs9GOeIkrw7FWxbWp2'];
+
+        const screens = {
+            loader: document.getElementById('loader'),
+            login: document.getElementById('login-screen'),
+            denied: document.getElementById('denied-screen'),
+            panel: document.getElementById('admin-panel-screen')
+        };
+        const loginBtn = document.getElementById('login-btn');
+        const modal = document.getElementById('confirmation-modal');
+        let confirmCallback = null;
+        
+        function showScreen(screenName) {
+            Object.values(screens).forEach(s => s.classList.remove('active'));
+            screens[screenName].classList.add('active');
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            showScreen('login');
+            auth.onAuthStateChanged(user => {
+                if (user) {
+                    showScreen('loader'); 
+                    if (ADMIN_UIDS.includes(user.uid)) {
+                        initializeApp();
+                        showScreen('panel');
+                    } else {
+                        showScreen('denied');
+                    }
+                } else {
+                    showScreen('login');
+                }
+            });
+        });
+        
+        function handleAdminLogin() {
+            const email = document.getElementById('login-email').value.trim();
+            const password = document.getElementById('login-password').value;
+            if (!email || !password) return showStatus("Email dan Password harus diisi.", 'error', 'login-status');
+            
+            loginBtn.disabled = true;
+            loginBtn.textContent = 'Logging in...';
+
+            auth.signInWithEmailAndPassword(email, password)
+                .catch(error => {
+                    let message = "Terjadi kesalahan. Coba lagi.";
+                    if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
+                        message = "Email atau Password salah.";
+                    }
+                    showStatus(message, 'error', 'login-status');
+                })
+                .finally(() => {
+                    loginBtn.disabled = false;
+                    loginBtn.textContent = 'Login';
+                });
+        }
+
+        function initializeApp() {
+            loadActiveLicenses();
+            loadUsedLicenses();
+            loadUsers();
+        }
+
+        function generateLicenseKey(){let e="ABCDEFGHJKLMNPQRSTUVWXYZ23456789",t="PPM-";for(let n=0;n<4;n++)t+=e.charAt(Math.floor(Math.random()*e.length));t+="-";for(let n=0;n<4;n++)t+=e.charAt(Math.floor(Math.random()*e.length));return t}async function handleGenerateLicense(){let e,t=!0;for(;t;)e=generateLicenseKey(),t=(await db.ref("licenseCodes/"+e).once("value")).exists();db.ref("licenseCodes/"+e).set(!0).then(()=>{document.getElementById("new-license-display").textContent=e,showStatus(`Lisensi ${e} dibuat!`,"success","panel-status")})}
+        
+        // --- CORRECTED FUNCTIONS ---
+        function loadActiveLicenses(){const e=document.getElementById("active-licenses-list");db.ref("licenseCodes").on("value",t=>{e.innerHTML="",t.exists()?t.forEach(t=>{const n=t.key,s=document.createElement("div");s.className="flex justify-between items-center bg-gray-800 p-2 rounded",s.innerHTML=`<span class="font-mono">${n}</span><button data-key="${n}" class="delete-license-btn text-red-500 hover:text-red-400 text-xs">HAPUS</button>`,e.appendChild(s)}):e.innerHTML='<p class="text-gray-500">Tidak ada lisensi aktif.</p>'}
+        )}
+        
+        function loadUsedLicenses(){const e=document.getElementById("used-licenses-list");db.ref("usedLicenseCodes").on("value",t=>{e.innerHTML="",t.exists()?t.forEach(t=>{const n=t.key,s=t.val(),a=document.createElement("div");a.className="flex justify-between items-center bg-gray-800 p-2 rounded",a.innerHTML=`<div class="flex flex-col"><span class="font-mono">${n}</span><span class="text-gray-400 text-xs">Used by: ${s.userid}</span></div><button data-key="${n}" class="reactivate-license-btn text-green-500 hover:text-green-400 text-xs">AKTIFKAN</button>`,e.appendChild(a)}):e.innerHTML='<p class="text-gray-500">Tidak ada lisensi terpakai.</p>'}
+        )}
+        
+        function handleReactivateLicense(e){showConfirmation("Aktifkan Ulang Lisensi?",`Anda yakin ingin membuat lisensi ${e} tersedia kembali?`,()=>{const t={};t[`licenseCodes/${e}`]=!0,t[`usedLicenseCodes/${e}`]=null,db.ref().update(t).then(()=>showStatus(`Lisensi ${e} diaktifkan kembali.`,"success","panel-status"))})}
+        function loadUsers(){const e=document.getElementById("users-list");db.ref("users").on("value",t=>{e.innerHTML="",t.exists()?t.forEach(t=>{const n=t.key,s=t.val(),a=document.createElement("div");a.className="flex justify-between items-center bg-gray-800 p-2 rounded",a.innerHTML=`\n <div class="flex flex-col">\n <span class="font-semibold">${s.userid}</span>\n <span class="text-gray-400 text-xs font-mono">${n}</span>\n </div>\n <button data-uid="${n}" data-userid="${s.userid}" class="terminate-user-btn bg-red-600 hover:bg-red-500 text-white font-semibold py-1 px-3 rounded-md text-xs">TERMINATE</button>\n `,e.appendChild(a)}):e.innerHTML='<p class="text-gray-500">Tidak ada pengguna terdaftar.</p>'}
+        )}
+        function handleTerminateUser(e,t){showConfirmation("Terminate Pengguna?",`Anda yakin ingin menghapus ${t} secara permanen? Tindakan ini tidak bisa dibatalkan.`,()=>{showStatus(`Menghapus ${t}... (Memerlukan Cloud Function)`,"error","panel-status"),console.log(`[KONSEP] Panggil Cloud Function untuk menghapus UID: ${e} dan UserID: ${t}`)})}
+        
+        function showStatus(message, type, elementId) {
+            const el = document.getElementById(elementId);
+            if (!el) return;
+            el.textContent = message;
+            el.className = `text-center text-sm h-5 font-semibold ${type === 'success' ? 'text-green-400' : 'text-red-400'}`;
+            setTimeout(() => el.textContent = '', 4000);
+        }
+
+        function showConfirmation(title, body, onConfirm) {
+            document.getElementById('modal-title').textContent = title;
+            document.getElementById('modal-body').textContent = body;
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            confirmCallback = onConfirm;
+        }
+        
+        loginBtn.addEventListener('click', handleAdminLogin);
+        document.getElementById('logout-btn').addEventListener('click', () => auth.signOut());
+        document.getElementById('generate-license-btn').addEventListener('click', handleGenerateLicense);
+        
+        document.addEventListener('click', e => {
+            if (e.target.matches('.delete-license-btn')) {
+                const key = e.target.dataset.key;
+                showConfirmation('Hapus Lisensi?', `Anda yakin ingin menghapus lisensi ${key}?`, () => {
+                    db.ref('licenseCodes/' + key).remove().then(() => showStatus(`Lisensi ${key} dihapus.`, 'success', 'panel-status'));
+                });
+            }
+            if (e.target.matches('.reactivate-license-btn')) handleReactivateLicense(e.target.dataset.key);
+            if (e.target.matches('.terminate-user-btn')) handleTerminateUser(e.target.dataset.uid, e.target.dataset.userid);
+        });
+        
+        document.getElementById('modal-cancel-btn').addEventListener('click', () => modal.classList.add('hidden'));
+        document.getElementById('modal-confirm-btn').addEventListener('click', () => {
+            if (confirmCallback) confirmCallback();
+            modal.classList.add('hidden');
+        });
+
+    </script>
+</body>
+</html>

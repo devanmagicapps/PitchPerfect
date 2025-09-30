@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Now Playing - Loading...</title>
+    
+    <!-- Font Awesome untuk Ikon -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    
+    <!-- Firebase SDK Modular Imports -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js";
+        window.firebaseModules = { initializeApp, getAuth, signInAnonymously, signInWithCustomToken, getDatabase, ref, onValue };
+    </script>
+    
+    <style>
+        /* Import Google Font yang mirip dengan font Spotify */
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;700;800&display=swap');
+
+        /* --- Gaya Dasar --- */
+        html, body {
+            height: 100%;
+            margin: 0;
+            overflow: hidden;
+        }
+
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #121212;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            transition: background-color 0.3s ease;
+        }
+
+        /* --- Kontainer Player Utama (Desktop) --- */
+        .player-container {
+            width: 100%;
+            max-width: 380px;
+            background-color: #181818;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+            user-select: none;
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        /* --- Efek Skeleton --- */
+        .skeleton {
+            background: #282828;
+            background: linear-gradient(110deg, #282828 8%, #333 18%, #282828 33%);
+            background-size: 200% 100%;
+            animation: 1.5s shimmer infinite linear;
+            border-radius: 6px;
+            opacity: 0.7;
+        }
+
+        @keyframes shimmer {
+            /* KOREKSI: Menghapus transform: rotate(360deg) yang menyebabkan putaran */
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; } /* Animasi geser background */
+        }
+        
+        .top-bar { display: flex; justify-content: space-between; align-items: center; }
+        .top-bar .title-placeholder { width: 70%; height: 20px; }
+        .icon { color: #b3b3b3; font-size: 1.2rem; opacity: 0.6; cursor: not-allowed; }
+        .album-art { width: 100%; padding-bottom: 100%; border-radius: 8px; }
+        .controls-wrapper { display: flex; flex-direction: column; gap: 20px; }
+        .track-info-section { display: flex; justify-content: space-between; align-items: center; }
+        .track-info-text .song-title { width: 250px; height: 24px; margin-bottom: 8px; }
+        .track-info-text .artist-name { width: 180px; height: 18px; }
+        .progress-section { display: flex; flex-direction: column; }
+        .progress-bar-container { width: 100%; height: 4px; background-color: #404040; border-radius: 2px; margin-bottom: 5px; }
+        .progress-time { display: flex; justify-content: space-between; font-size: 0.75rem; color: #b3b3b3; }
+        .playback-controls { display: flex; justify-content: space-between; align-items: center; }
+        .play-btn { font-size: 2.2rem; width: 70px; height: 70px; display: flex; justify-content: center; align-items: center; background-color: #b3b3b3; color: #181818; border-radius: 50%; opacity: 0.5; cursor: not-allowed; padding-left: 5px; box-sizing: border-box; }
+        .extra-controls { display: flex; justify-content: space-between; align-items: center; }
+        
+        @media (max-width: 768px) {
+            body { background-color: #181818; align-items: stretch; }
+            .player-container { height: 100vh; max-width: none; border-radius: 0; box-shadow: none; padding: 5vh 8vw; box-sizing: border-box; justify-content: space-between; }
+            .album-art { height: 0; padding-bottom: min(70vw, 45vh); width: min(70vw, 45vh); margin: 0 auto; }
+        }
+
+        /* --- Gaya Pop-up yang Disempurnakan --- */
+        #wake-lock-overlay {
+            position: fixed;
+            inset: 0;
+            background-color: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(10px);
+            z-index: 9999;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 1rem;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+            animation: fadeIn 0.5s forwards;
+        }
+
+        @keyframes fadeIn {
+            to { opacity: 1; }
+        }
+
+        .popup-box {
+            /* REVISI: Menggunakan flexbox untuk perataan sempurna */
+            display: flex;
+            flex-direction: column;
+            align-items: center; /* Memastikan semua item center secara horizontal */
+            gap: 1rem; /* Jarak konsisten antar elemen */
+            text-align: center; /* Meratakan teks di dalam elemen */
+            color: white;
+            max-width: 300px;
+        }
+
+        .popup-box h2 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin: 0;
+        }
+        
+        .popup-box p {
+            font-size: 1rem;
+            color: #b3b3b3;
+            line-height: 1.5;
+            margin: 0;
+        }
+
+        .wakeup-button {
+            width: 120px;
+            height: 120px;
+            background-color: #1DB954; /* Spotify Green */
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            box-shadow: 0 0 20px rgba(29, 185, 84, 0.5);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            margin-top: 0.5rem; /* Sedikit jarak tambahan dari teks */
+        }
+        .wakeup-button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 30px rgba(29, 185, 84, 0.7);
+        }
+        .wakeup-button .fa-power-off {
+            font-size: 3rem;
+            color: #121212;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- KONTEN LAMA (Tidak Diubah) -->
+    <div class="player-container">
+        <div class="top-bar">
+            <i class="fas fa-chevron-down icon"></i>
+            <div class="title-placeholder skeleton"></div>
+            <i class="fas fa-ellipsis-h icon"></i>
+        </div>
+        <div class="main-content">
+            <div class="album-art skeleton"></div>
+        </div>
+        <div class="controls-wrapper">
+            <div class="track-info-section">
+                <div class="track-info-text">
+                    <div class="song-title skeleton"></div>
+                    <div class="artist-name skeleton"></div>
+                </div>
+                <i class="far fa-heart icon"></i>
+            </div>
+            <div class="progress-section">
+                <div class="progress-bar-container"></div>
+                <div class="progress-time"><span>0:00</span><span>-:--</span></div>
+            </div>
+            <div class="playback-controls">
+                <i class="fas fa-random icon"></i><i class="fas fa-step-backward icon"></i>
+                <div class="play-btn"><i class="fas fa-play"></i></div>
+                <i class="fas fa-step-forward icon"></i><i class="fas fa-redo-alt icon"></i>
+            </div>
+            <div class="extra-controls">
+                <i class="fas fa-desktop icon"></i><i class="fas fa-list-ul icon"></i>
+            </div>
+        </div>
+    </div>
+    <!-- AKHIR KONTEN LAMA -->
+
+    <!-- Pop-up Wake Lock (Struktur HTML tetap sama) -->
+    <div id="wake-lock-overlay">
+        <div class="popup-box">
+            <h2>Mencegah Layar Mati</h2>
+            <p>Klik tombol di bawah agar layar tetap menyala selama pertunjukan.</p>
+            <div id="wakeup-btn" class="wakeup-button" title="Jaga layar tetap menyala">
+                <i class="fas fa-power-off"></i>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- Firebase Configuration ---
+        const defaultFirebaseConfig = {
+            apiKey: "AIzaSyCUmdnxFqYoi5Uj2809G0Pfd78nUdslG0M",
+            authDomain: "pitch-perfect-magic.firebaseapp.com",
+            databaseURL: "https://pitch-perfect-magic-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "pitch-perfect-magic",
+            storageBucket: "pitch-perfect-magic.appspot.com",
+            messagingSenderId: "298805847665",
+            appId: "1:298805847665:web:de8afedb832e38daeaddd0"
+        };
+        
+        const envFirebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+        const firebaseConfig = envFirebaseConfig || defaultFirebaseConfig;
+
+        let app, auth, db;
+        
+        // isFirstData menjadi penanda bahwa data pertama yang dibaca (data awal) sudah diterima.
+        let isFirstData = true; 
+
+        // --- Core Functions ---
+
+        /**
+         * Menginisialisasi Firebase dan melakukan login anonim atau menggunakan custom token.
+         */
+        async function initFirebaseAndAuth() {
+            if (typeof window.firebaseModules === 'undefined') {
+                console.error("Firebase modular SDK not loaded.");
+                return;
+            }
+
+            const { initializeApp, getAuth, signInAnonymously, signInWithCustomToken, getDatabase } = window.firebaseModules;
+            
+            try {
+                app = initializeApp(firebaseConfig);
+                auth = getAuth(app);
+                db = getDatabase(app);
+
+                // Lakukan login
+                if (initialAuthToken) {
+                    await signInWithCustomToken(auth, initialAuthToken);
+                } else {
+                    await signInAnonymously(auth);
+                }
+                
+                // Setelah login sukses, lanjutkan pemuatan data
+                setupRealtimeListener();
+
+            } catch (error) {
+                console.error("Firebase Initialization or Authentication failed:", error);
+            }
+        }
+        
+        /**
+         * Memasang listener database setelah autentikasi sukses.
+         */
+        function setupRealtimeListener() {
+            const { ref, onValue } = window.firebaseModules;
+            const urlParams = new URLSearchParams(window.location.search);
+            const ownerId = urlParams.get('id');
+
+            if (!ownerId) {
+                console.error("User ID (Owner) tidak ditemukan di URL. Tambahkan ?id=userid Anda.");
+                return;
+            }
+
+            // MENDENGARKAN spectatorChoices sesuai instruksi
+            const spectatorChoicesRef = ref(db, `${ownerId}/spectatorChoices`);
+
+            // Memasang Realtime Listener
+            onValue(spectatorChoicesRef, (snapshot) => {
+                const data = snapshot.val();
+                
+                if (isFirstData) {
+                    isFirstData = false;
+                    
+                    // Logic untuk data pertama (menganggap ini data awal yang valid)
+                    if (data) {
+                        console.log("[STATUS] Listener aktif. Data awal di spectatorChoices diterima:", data);
+                        // JIKA ANDA INGIN REDIRECT PADA DATA AWAL, HAPUS KOMENTAR DI BAWAH INI
+                        // attemptRedirect(data); 
+                    } else {
+                        console.log("[STATUS] Listener aktif. Data awal di spectatorChoices kosong.");
+                    }
+                    return;
+                }
+                
+                // --- LOGIKA UPDATE DATA BARU ---
+                
+                if (data) {
+                    console.log("[UPDATE] Data baru terdeteksi di spectatorChoices:", data);
+                    attemptRedirect(data);
+                } else {
+                    console.log("[UPDATE] spectatorChoices dihapus atau kosong.");
+                }
+            });
+        }
+        
+        /**
+         * Logika untuk mencari link dan melakukan redirect.
+         * @param {Object | String} data - Data dari Firebase (node spectatorChoices).
+         */
+        function attemptRedirect(data) {
+            let latestLink = null;
+            
+            // Logika untuk menangani data yang berupa objek {UID: Link}
+            if (typeof data === 'object' && data !== null) {
+                // Cari link Spotify yang valid di antara nilai-nilai objek
+               const links = Object.values(data).filter(link => typeof link === 'string' && link.startsWith('https://open.spotify.com'));
+               if (links.length > 0) {
+                   // Ambil link yang terakhir (walaupun tidak ada jaminan ini yang terbaru di Realtime DB)
+                   latestLink = links[links.length - 1]; 
+               }
+            } else if (typeof data === 'string' && data.startsWith('https://open.spotify.com')) {
+               // Menangani kasus jika node bukan objek (misal, hanya string)
+               latestLink = data;
+            }
+
+            if (latestLink) {
+                 console.log("[REDIRECT] Mengalihkan ke link Spotify terbaru:", latestLink);
+                 window.location.replace(latestLink);
+            }
+        }
+
+        // --- Wake Lock Logic (Tidak Berubah) ---
+        const wakeLockOverlay = document.getElementById('wake-lock-overlay');
+        const wakeupBtn = document.getElementById('wakeup-btn');
+        let wakeLock = null;
+
+        const requestWakeLock = async () => {
+            if ('wakeLock' in navigator) {
+                try {
+                    wakeLock = await navigator.wakeLock.request('screen');
+                    console.log('Screen Wake Lock diaktifkan!');
+                    wakeLockOverlay.style.opacity = '0';
+                    setTimeout(() => { wakeLockOverlay.style.display = 'none'; }, 500);
+                } catch (err) {
+                    console.error(`${err.name}, ${err.message}`);
+                    wakeLockOverlay.style.display = 'none';
+                }
+            } else {
+                console.warn('Screen Wake Lock API tidak didukung di browser ini.');
+                wakeLockOverlay.style.display = 'none';
+            }
+        };
+
+        wakeupBtn.addEventListener('click', requestWakeLock);
+
+        // --- Main Event Listener ---
+        document.addEventListener('DOMContentLoaded', () => {
+            initFirebaseAndAuth();
+        });
+
+    </script>
+</body>
+</html>

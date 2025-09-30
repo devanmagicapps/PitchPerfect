@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Pitch Perfect - User Panel</title>
+    
+    <!-- PWA Tags (DITAMBAHKAN KEMBALI) -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#111827">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Pitch Perfect">
+    <link rel="apple-touch-icon" href="icons/icon-192x192.png">
+
+    <!-- Tailwind CSS & Google Fonts -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Lora:wght@500;600&display=swap" rel="stylesheet">
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+    <style>
+        html, body { overflow: hidden; height: 100%; width: 100%; position: fixed; }
+        body { font-family: 'Inter', sans-serif; -webkit-user-select: none; user-select: none; background-color: #030712; }
+        h1, h2, h3 { font-family: 'Lora', serif; }
+        
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #374151; border-radius: 10px; }
+        
+        .screen { display: none; }
+        .screen.active { display: flex; animation: fadeIn 0.5s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        
+        .input-group { position: relative; }
+        .input-group svg { position: absolute; left: 0.85rem; top: 50%; transform: translateY(-50%); color: #6b7280; transition: color 0.2s; }
+        .input-group input { padding-left: 2.75rem; }
+        .form-input { background-color: #1f2937; border: 1px solid #374151; transition: all 0.2s ease-in-out; border-left-width: 1px; }
+        .input-group:focus-within svg { color: #22d3ee; }
+        .form-input:focus { outline: none; border-color: #374151; border-left-color: #22d3ee; border-left-width: 3px; box-shadow: 0 0 15px -3px rgba(34, 211, 238, 0.2); }
+
+        @keyframes soundwave { 0% { transform: scaleY(0.4); } 20% { transform: scaleY(1); } 40% { transform: scaleY(0.4); } 100% { transform: scaleY(0.4); } }
+        .sound-bar { width: 4px; height: 32px; background-color: #22d3ee; animation: soundwave 1.2s ease-in-out infinite; }
+        .sound-bar:nth-child(2) { animation-delay: 0.1s; } .sound-bar:nth-child(3) { animation-delay: 0.2s; } .sound-bar:nth-child(4) { animation-delay: 0.3s; }
+    </style>
+</head>
+<body class="text-gray-200 flex items-center justify-center p-4">
+
+    <!-- Loading Screen -->
+    <div id="loader" class="screen absolute inset-0 bg-gray-900 justify-center items-center">
+        <div class="flex items-center justify-center space-x-2"><div class="sound-bar"></div><div class="sound-bar"></div><div class="sound-bar"></div><div class="sound-bar"></div></div>
+    </div>
+
+    <!-- Login & Register Screens -->
+    <div id="auth-screen" class="screen w-full max-w-sm">
+        <div class="bg-gray-800 border border-gray-700 rounded-2xl shadow-2xl w-full p-8 space-y-6">
+            <div id="login-form">
+                <div class="text-center mb-6"><h1 class="text-3xl font-bold text-white">Selamat Datang!</h1><p class="text-gray-400">Login untuk melanjutkan</p></div>
+                <div class="space-y-4">
+                    <div class="input-group"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg><input id="login-email" type="email" placeholder="Email" class="form-input w-full p-3 rounded-lg text-gray-200"></div>
+                    <div class="input-group"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg><input id="login-password" type="password" placeholder="Password" class="form-input w-full p-3 rounded-lg text-gray-200"></div>
+                    <button id="login-btn" class="w-full bg-cyan-500 text-gray-900 font-semibold py-3 rounded-xl hover:bg-cyan-400 active:bg-cyan-600 transition-all shadow-lg shadow-cyan-500/20 disabled:opacity-50">Login</button>
+                </div>
+                <p class="text-center text-sm text-gray-400 mt-6">Belum punya akun? <a href="#" id="go-to-register" class="font-semibold text-cyan-400 hover:underline">Daftar</a></p>
+            </div>
+            <div id="register-form" class="hidden">
+                 <div class="text-center mb-6"><h1 class="text-3xl font-bold text-white">Buat Akun</h1><p class="text-gray-400">Satu langkah lagi menuju keajaiban</p></div>
+                <div class="space-y-3">
+                    <div class="input-group"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg><input id="register-email" type="email" placeholder="Email" class="form-input w-full p-3 rounded-lg"></div>
+                    <div class="input-group"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg><input id="register-password" type="password" placeholder="Password" class="form-input w-full p-3 rounded-lg"></div>
+                    <div class="input-group"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg><input id="register-userid" type="text" placeholder="User ID" class="form-input w-full p-3 rounded-lg"></div>
+                    <div class="input-group"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H5v-2H3v-2H1.75a1.75 1.75 0 010-3.5H3V7h2V5h2V3h2v2h2v2h2a2 2 0 012 2z"></path></svg><input id="register-license" type="text" placeholder="Kode Lisensi" class="form-input w-full p-3 rounded-lg"></div>
+                    <button id="register-btn" class="w-full bg-cyan-500 text-gray-900 font-semibold py-3 rounded-xl hover:bg-cyan-400 active:bg-cyan-600 transition-all shadow-lg shadow-cyan-500/20 !mt-5 disabled:opacity-50">Daftar</button>
+                </div>
+                <p class="text-center text-sm text-gray-400 mt-6">Sudah punya akun? <a href="#" id="go-to-login" class="font-semibold text-cyan-400 hover:underline">Login</a></p>
+            </div>
+             <p id="auth-status" class="text-center text-sm h-5 text-red-400 font-semibold"></p>
+        </div>
+    </div>
+    
+    <!-- User Panel Screen -->
+    <div id="panel-screen" class="screen w-full max-w-md">
+        <div class="bg-gray-800 border border-gray-700 rounded-2xl shadow-2xl w-full flex flex-col max-h-[95vh]">
+            <div class="flex-shrink-0 p-6 pb-4"><div class="flex justify-between items-center"><div><h1 class="text-xl font-bold text-white">User Panel</h1><p class="text-sm text-gray-400">ID: <span id="panel-userid" class="font-semibold text-cyan-400">...</span></p></div><button id="logout-btn" title="Logout" class="text-gray-400 hover:text-red-500 transition-colors"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg></button></div></div>
+            <div class="flex-grow overflow-y-auto custom-scrollbar px-6"><div id="song-inputs" class="space-y-2 py-2"></div></div>
+            <div class="flex-shrink-0 p-6 pt-4"><button id="save-btn" class="w-full bg-cyan-500 text-gray-900 font-semibold py-3 px-4 rounded-xl hover:bg-cyan-400 active:bg-cyan-600 transition-all shadow-lg shadow-cyan-500/20 flex items-center justify-center space-x-2 disabled:opacity-50"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg><span>Simpan Konfigurasi</span></button><p id="panel-status" class="text-center text-sm mt-3 h-5 font-semibold"></p></div>
+        </div>
+    </div>
+
+    <script>
+        const firebaseConfig = {
+
+  apiKey: "AIzaSyCUmdnxFqYoi5Uj2809G0Pfd78nUdslG0M",
+
+  authDomain: "pitch-perfect-magic.firebaseapp.com",
+
+  databaseURL: "https://pitch-perfect-magic-default-rtdb.asia-southeast1.firebasedatabase.app",
+
+  projectId: "pitch-perfect-magic",
+
+  storageBucket: "pitch-perfect-magic.firebasestorage.app",
+
+  messagingSenderId: "298805847665",
+
+  appId: "1:298805847665:web:de8afedb832e38daeaddd0"
+
+};
+
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.database();
+
+        const screens = {
+            loader: document.getElementById('loader'),
+            auth: document.getElementById('auth-screen'),
+            panel: document.getElementById('panel-screen')
+        };
+        const loginForm = document.getElementById('login-form');
+        const registerForm = document.getElementById('register-form');
+        let currentUserId = null;
+
+        function showScreen(screenName) {
+            Object.values(screens).forEach(s => s.classList.remove('active'));
+            screens[screenName].classList.add('active');
+        }
+
+        auth.onAuthStateChanged(user => {
+            if (user) {
+                showScreen('loader');
+                loadUserPanel(user);
+            } else {
+                showScreen('auth');
+            }
+        });
+
+        async function loadUserPanel(user) { /* ... (fungsi tidak berubah) ... */ }
+        function createSongInputAccordions() { /* ... (fungsi tidak berubah) ... */ }
+        function setupAccordion() { /* ... (fungsi tidak berubah) ... */ }
+        async function handleRegister() { /* ... (fungsi tidak berubah) ... */ }
+        function handleLogin() { /* ... (fungsi tidak berubah) ... */ }
+        function handleSave() { /* ... (fungsi tidak berubah) ... */ }
+        function showStatus(message, type, elementId) { /* ... (fungsi tidak berubah) ... */ }
+
+        // --- Event Listeners (disingkat, tidak berubah) ---
+        // ...
+
+        // PWA Service Worker Registration (DITAMBAHKAN KEMBALI)
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/service-worker.js')
+                    .then(reg => console.log('SW terdaftar!', reg))
+                    .catch(err => console.log('Pendaftaran SW gagal:', err));
+            });
+        }
+        
+        // --- Implementasi fungsi-fungsi yang disingkat ---
+        async function loadUserPanel(user){try{const e=await db.ref("users/"+user.uid).once("value");if(!e.exists())throw new Error("Data pengguna tidak ditemukan.");currentUserId=e.val().userid,document.getElementById("panel-userid").textContent=currentUserId,createSongInputAccordions();const t=await db.ref(currentUserId+"/forceItems").once("value");if(t.exists()){const e=t.val();e.forEach((e,t)=>{document.getElementById(`title-${t+1}`).value=e.title||"",document.getElementById(`artist-${t+1}`).value=e.artist||"",document.getElementById(`link-${t+1}`).value=e.link||""})}showScreen("panel")}catch(e){console.error("Error loading user panel:",e),showStatus(e.message,"error","auth-status"),auth.signOut()}}
+        function createSongInputAccordions(){const e=document.getElementById("song-inputs");e.innerHTML="";for(let t=1;t<=4;t++){const n=document.createElement("div");n.className="bg-gray-700/50 border border-gray-700 rounded-lg transition-all duration-300",n.innerHTML=`\n <button class="accordion-header w-full flex justify-between items-center p-3 text-left font-semibold text-gray-300">\n <span class="flex items-center space-x-3">\n <svg class="w-5 h-5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.1-.9 2-2 2s-2-.9-2-2 .9-2 2-2 2 .9 2 2zm12-3c0 1.1-.9 2-2 2s-2-.9-2-2 .9-2 2-2 2 .9 2 2z"></path></svg>\n <span>Lagu Pilihan #${t}</span>\n </span>\n <svg class="chevron w-5 h-5 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>\n </button>\n <div class="accordion-content">\n <div class="p-4 border-t border-gray-700 space-y-3">\n <input type="text" id="title-${t}" placeholder="Judul Lagu" class="form-input w-full p-2 rounded-md text-sm">\n <input type="text" id="artist-${t}" placeholder="Nama Artis" class="form-input w-full p-2 rounded-md text-sm">\n <input type="url" id="link-${t}" placeholder="Link Spotify" class="form-input w-full p-2 rounded-md text-sm">\n </div>\n </div>\n `,e.appendChild(n)}setupAccordion()}
+        function setupAccordion(){document.querySelectorAll(".accordion-header").forEach(e=>{e.addEventListener("click",()=>{const t=e.nextElementSibling,n=e.querySelector(".chevron"),s=t.style.maxHeight;document.querySelectorAll(".accordion-content").forEach(e=>{e.style.maxHeight=null}),document.querySelectorAll(".chevron").forEach(e=>{e.classList.remove("rotate-180")}),s?t.style.maxHeight=null:(t.style.maxHeight=t.scrollHeight+"px",n.classList.add("rotate-180"))})})}
+        async function handleRegister(){const e=document.getElementById("register-email").value.trim(),t=document.getElementById("register-password").value,n=document.getElementById("register-userid").value.trim().toLowerCase(),s=document.getElementById("register-license").value.trim(),a=document.getElementById("register-btn");if(!e||!t||!n||!s)return showStatus("Semua field wajib diisi.","error","auth-status");a.disabled=!0,a.textContent="Mendaftar...";try{const t=await db.ref("licenseCodes/"+s).once("value");if(!t.exists())throw new Error("Kode lisensi tidak valid.");const a=await db.ref("userids/"+n).once("value");if(a.exists())throw new Error("User ID sudah digunakan.");const i=await auth.createUserWithEmailAndPassword(e,t),o={};o["licenseCodes/"+s]=null,o["usedLicenseCodes/"+s]={userid:n},o["users/"+i.user.uid]={userid:n},o["userids/"+n]={uid:i.user.uid},await db.ref().update(o)}catch(e){console.error("Registration error:",e),showStatus(e.message,"error","auth-status")}finally{a.disabled=!1,a.textContent="Daftar"}}
+        async function handleRegister() {
+    // Gunakan nama variabel yang deskriptif
+    const email = document.getElementById("register-email").value.trim();
+    const password = document.getElementById("register-password").value; // Variabel password
+    const userId = document.getElementById("register-userid").value.trim().toLowerCase();
+    const licenseCode = document.getElementById("register-license").value.trim();
+    const registerBtn = document.getElementById("register-btn");
+
+    if (!email || !password || !userId || !licenseCode) {
+        return showStatus("Semua field wajib diisi.", "error", "auth-status");
+    }
+
+    registerBtn.disabled = true;
+    registerBtn.textContent = "Mendaftar...";
+
+    try {
+        // Ganti nama variabel 't' menjadi 'licenseSnapshot' agar tidak konflik
+        const licenseSnapshot = await db.ref("licenseCodes/" + licenseCode).once("value"); 
+        if (!licenseSnapshot.exists()) {
+            throw new Error("Kode lisensi tidak valid.");
+        }
+
+        const userIdSnapshot = await db.ref("userids/" + userId).once("value");
+        if (userIdSnapshot.exists()) {
+            throw new Error("User ID sudah digunakan.");
+        }
+
+        // Gunakan variabel 'password' yang benar saat membuat user
+        const userCredential = await auth.createUserWithEmailAndPassword(email, password); 
+
+        const updates = {};
+        updates["licenseCodes/" + licenseCode] = null;
+        updates["usedLicenseCodes/" + licenseCode] = { userid: userId };
+        updates["users/" + userCredential.user.uid] = { userid: userId };
+        updates["userids/" + userId] = { uid: userCredential.user.uid };
+        
+        await db.ref().update(updates);
+
+    } catch (error) {
+        console.error("Registration error:", error);
+        // Mengubah pesan error Firebase menjadi lebih ramah pengguna
+        let errorMessage = error.message;
+        if (error.code === 'auth/email-already-in-use') {
+            errorMessage = 'Email ini sudah terdaftar.';
+        } else if (error.code === 'auth/weak-password') {
+            errorMessage = 'Password terlalu lemah. Minimal 6 karakter.';
+        } else if (error.code === 'auth/invalid-email') {
+            errorMessage = 'Format email tidak valid.';
+        }
+        showStatus(errorMessage, "error", "auth-status");
+    } finally {
+        registerBtn.disabled = false;
+        registerBtn.textContent = "Daftar";
+    }
+}        function handleSave(){if(!currentUserId)return showStatus("User ID tidak ditemukan.","error","panel-status");const e=document.getElementById("save-btn");e.disabled=!0;const t=[];for(let n=1;n<=4;n++){const e=document.getElementById(`title-${n}`).value.trim(),s=document.getElementById(`artist-${n}`).value.trim(),a=document.getElementById(`link-${n}`).value.trim();if(!e||!s||!a)return showStatus(`Lengkapi data Lagu #${n}.`,"error","panel-status"),void(e.disabled=!1);t.push({title:e,artist:s,link:a})}db.ref(currentUserId+"/forceItems").set(t).then(()=>showStatus("Konfigurasi berhasil disimpan!","success","panel-status")).catch(t=>showStatus(t.message,"error","panel-status")).finally(()=>{e.disabled=!1})}
+        function showStatus(e,t,n){const s=document.getElementById(n);s&&(s.textContent=e,s.className=`text-center text-sm h-5 font-semibold ${"success"===t?"text-green-400":"text-red-400"}`,setTimeout(()=>{s&&(s.textContent="")},4e3))}
+        document.getElementById("go-to-register").addEventListener("click",e=>{e.preventDefault(),loginForm.classList.add("hidden"),registerForm.classList.remove("hidden")}),document.getElementById("go-to-login").addEventListener("click",e=>{e.preventDefault(),registerForm.classList.add("hidden"),loginForm.classList.remove("hidden")}),document.getElementById("login-btn").addEventListener("click",handleLogin),document.getElementById("register-btn").addEventListener("click",handleRegister),document.getElementById("logout-btn").addEventListener("click",()=>auth.signOut()),document.getElementById("save-btn").addEventListener("click",handleSave);
+
+    </script>
+</body>
+</html>
