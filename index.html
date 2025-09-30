@@ -20,24 +20,7 @@
             font-family: 'Inter', sans-serif;
             background-color: #121212; /* Spotify's dark background */
             color: #ffffff;
-            /* Center the main content block */
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            position: relative; /* Needed for absolute positioning of header */
-            overflow: hidden; /* Prevent potential scrollbars from absolute header */
-        }
-
-        /* Header is positioned absolutely at the top */
-        .page-header {
-            position: absolute;
-            top: 8vh; /* Position near the top */
-            left: 0;
-            right: 0;
-            width: 100%;
-            max-width: 28rem; /* Corresponds to max-w-md */
-            margin-left: auto;
-            margin-right: auto;
+            overflow: hidden; /* Prevent scrolling on the body */
         }
 
         /* Custom scrollbar to match the theme */
@@ -87,30 +70,33 @@
         }
     </style>
 </head>
-<body class="p-4">
+<body>
 
-    <!-- Header Section (positioned absolutely) -->
-    <header class="page-header text-center">
-        <div class="flex justify-center mb-4">
-            <svg role="img" height="60" width="60" aria-hidden="true" viewBox="0 0 167 167" fill="#1DB954">
-                <path d="M83.5 0C37.5 0 0 37.5 0 83.5S37.5 167 83.5 167 167 129.5 167 83.5 129.5 0 83.5 0zM122 120.8c-1.4 2.5-4.4 3.2-6.8 1.8-19.5-12-44-14.7-73.4-8.1-2.8.6-5.5-1.2-6.1-4s1.2-5.5 4-6.1c31.9-7.1 58.6-4.1 80.1 9.2 2.4 1.5 3.2 4.5 1.8 6.8zM132.3 98.2c-1.7 3-5.5 4-8.5 2.3-22.3-13.7-56.2-17.7-83.1-9.7-3.3 1-6.7-1-7.6-4.2s1-6.7 4.2-7.6c30.1-8.7 67.2-4.2 92.9 11.2 3 1.7 4 5.5 2.3 8.5zM133.2 74.3c-2 3.6-6.6 4.8-10.2 2.8-25.7-15.5-68.7-19-98.2-10.5-4 .9-8.1-1.2-9-5.2s1.2-8.1 5.2-9c33.3-9.5 79.9-5.5 109.2 11.7 3.6 2 4.8 6.6 2.8 10.2z"></path>
-            </svg>
-        </div>
-        <p class="text-lg text-gray-300 px-4">
-            Best place to share your spotify playlist to your audience!
-        </p>
-    </header>
+    <!-- Main wrapper for vertical distribution -->
+    <div class="flex flex-col justify-around items-center min-h-screen w-full max-w-md mx-auto p-4 sm:p-6 md:p-8">
 
-    <!-- Main Content (centered vertically and horizontally) -->
-    <main class="w-full max-w-md mx-auto flex flex-col items-center">
-        
-        <!-- Song List Container -->
-        <div class="bg-[#181818] rounded-lg p-4 shadow-lg w-full mb-8">
-            <!-- Scrollable list: height is now set by JavaScript -->
-            <div id="song-list" class="overflow-y-auto pr-2">
-                <!-- Song items will be injected by JavaScript -->
+        <!-- Header Section -->
+        <header class="text-center">
+            <div class="flex justify-center mb-4">
+                <svg role="img" height="60" width="60" aria-hidden="true" viewBox="0 0 167 167" fill="#1DB954">
+                    <path d="M83.5 0C37.5 0 0 37.5 0 83.5S37.5 167 83.5 167 167 129.5 167 83.5 129.5 0 83.5 0zM122 120.8c-1.4 2.5-4.4 3.2-6.8 1.8-19.5-12-44-14.7-73.4-8.1-2.8.6-5.5-1.2-6.1-4s1.2-5.5 4-6.1c31.9-7.1 58.6-4.1 80.1 9.2 2.4 1.5 3.2 4.5 1.8 6.8zM132.3 98.2c-1.7 3-5.5 4-8.5 2.3-22.3-13.7-56.2-17.7-83.1-9.7-3.3 1-6.7-1-7.6-4.2s1-6.7 4.2-7.6c30.1-8.7 67.2-4.2 92.9 11.2 3 1.7 4 5.5 2.3 8.5zM133.2 74.3c-2 3.6-6.6 4.8-10.2 2.8-25.7-15.5-68.7-19-98.2-10.5-4 .9-8.1-1.2-9-5.2s1.2-8.1 5.2-9c33.3-9.5 79.9-5.5 109.2 11.7 3.6 2 4.8 6.6 2.8 10.2z"></path>
+                </svg>
             </div>
-        </div>
+            <p class="text-lg text-gray-300 px-4">
+                Best place to share your spotify playlist to your audience!
+            </p>
+        </header>
+
+        <!-- Main Content -->
+        <main class="w-full">
+            <!-- Song List Container -->
+            <div class="bg-[#181818] rounded-lg p-4 shadow-lg w-full">
+                <!-- Scrollable list: height is set by JavaScript -->
+                <div id="song-list" class="overflow-y-auto pr-2">
+                    <!-- Song items will be injected by JavaScript -->
+                </div>
+            </div>
+        </main>
         
         <!-- Action Button -->
         <button id="test-luck-btn" class="bg-[#1DB954] text-white font-bold py-3 px-8 rounded-full transition-transform duration-200 hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center">
@@ -118,16 +104,15 @@
             <div id="button-loader" class="loader ml-3 hidden"></div>
         </button>
 
-    </main>
+    </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getDatabase, ref, get, update } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js";
+        import { getDatabase, ref, get, set } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js";
 
         // --- Firebase Globals & Initialization ---
         
-        // Konfigurasi Firebase Default sebagai cadangan
         const defaultFirebaseConfig = {
             apiKey: "AIzaSyCUmdnxFqYoi5Uj2809G0Pfd78nUdslG0M",
             authDomain: "pitch-perfect-magic.firebaseapp.com",
@@ -138,59 +123,36 @@
             appId: "1:298805847665:web:de8afedb832e38daeaddd0"
         };
         
-        // PENTING: Menggunakan variabel global lingkungan untuk konfigurasi Firebase
         const envFirebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
         const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
         
-        // Prioritaskan konfigurasi lingkungan, jika tidak ada gunakan default
         const firebaseConfig = envFirebaseConfig || defaultFirebaseConfig;
 
-        let app;
-        let auth;
-        let database;
-        
-        // Inisialisasi Firebase (selalu berjalan karena config selalu ada)
-        app = initializeApp(firebaseConfig);
-        auth = getAuth(app);
-        database = getDatabase(app);
+        let app = initializeApp(firebaseConfig);
+        let auth = getAuth(app);
+        let database = getDatabase(app);
 
-        // --- NEW: State Variable for Spectator UID (Authenticated User) ---
+        // --- State Variables ---
         let spectatorUid = null;
-        // userId from URL is the playlist Owner's ID
         let ownerId = null; 
 
         // --- Song List (30 songs) ---
         const songs = [
-            { title: "Monokrom", artist: "Tulus" },
-            { title: "As It Was", artist: "Harry Styles" },
-            { title: "Sisa Rasa", artist: "Mahalini" },
-            { title: "Blinding Lights", artist: "The Weeknd" },
-            { title: "Komang", artist: "Raim Laode" },
-            { title: "good 4 u", artist: "Olivia Rodrigo" },
-            { title: "Penjaga Hati", artist: "Nadhif Basalamah" },
-            { title: "Levitating", artist: "Dua Lipa" },
-            { title: "Runtuh", artist: "Feby Putri, Fiersa Besari" },
-            { title: "Heat Waves", artist: "Glass Animals" },
-            { title: "Bertaut", artist: "Nadin Amizah" },
-            { title: "Save Your Tears", artist: "The Weeknd" },
-            { title: "Sang Dewi", artist: "Lyodra, Andi Rianto" },
-            { title: "Stay", artist: "The Kid LAROI, Justin Bieber" },
-            { title: "Rayuan Perempuan Gila", artist: "Nadin Amizah" },
-            { title: "Watermelon Sugar", artist: "Harry Styles" },
-            { title: "Satu-Satu", artist: "Idgitaf" },
-            { title: "bad guy", artist: "Billie Eilish" },
-            { title: "Tak Ingin Usai", artist: "Keisya Levronka" },
-            { title: "Creepin'", artist: "Metro Boomin, The Weeknd, 21 Savage" },
-            { title: "Merasa Indah", artist: "Tiara Andini" },
-            { title: "Anti-Hero", artist: "Taylor Swift" },
-            { title: "Dengan Caraku", artist: "Arsy Widianto, Brisia Jodie" },
-            { title: "INDUSTRY BABY", artist: "Lil Nas X, Jack Harlow" },
-            { title: "Hati-Hati di Jalan", artist: "Tulus" },
-            { title: "Flowers", artist: "Miley Cyrus" },
-            { title: "Pilihan Yang Terbaik", artist: "Ziva Magnolya" },
-            { title: "Easy On Me", artist: "Adele" },
-            { title: "Diri", artist: "Tulus" },
-            { title: "Shape of You", artist: "Ed Sheeran" }
+            { title: "Monokrom", artist: "Tulus" }, { title: "As It Was", artist: "Harry Styles" },
+            { title: "Sisa Rasa", artist: "Mahalini" }, { title: "Blinding Lights", artist: "The Weeknd" },
+            { title: "Komang", artist: "Raim Laode" }, { title: "good 4 u", artist: "Olivia Rodrigo" },
+            { title: "Penjaga Hati", artist: "Nadhif Basalamah" }, { title: "Levitating", artist: "Dua Lipa" },
+            { title: "Runtuh", artist: "Feby Putri, Fiersa Besari" }, { title: "Heat Waves", artist: "Glass Animals" },
+            { title: "Bertaut", artist: "Nadin Amizah" }, { title: "Save Your Tears", artist: "The Weeknd" },
+            { title: "Sang Dewi", artist: "Lyodra, Andi Rianto" }, { title: "Stay", artist: "The Kid LAROI, Justin Bieber" },
+            { title: "Rayuan Perempuan Gila", artist: "Nadin Amizah" }, { title: "Watermelon Sugar", artist: "Harry Styles" },
+            { title: "Satu-Satu", artist: "Idgitaf" }, { title: "bad guy", artist: "Billie Eilish" },
+            { title: "Tak Ingin Usai", artist: "Keisya Levronka" }, { title: "Creepin'", artist: "Metro Boomin, The Weeknd, 21 Savage" },
+            { title: "Merasa Indah", artist: "Tiara Andini" }, { title: "Anti-Hero", artist: "Taylor Swift" },
+            { title: "Dengan Caraku", artist: "Arsy Widianto, Brisia Jodie" }, { title: "INDUSTRY BABY", artist: "Lil Nas X, Jack Harlow" },
+            { title: "Hati-Hati di Jalan", artist: "Tulus" }, { title: "Flowers", artist: "Miley Cyrus" },
+            { title: "Pilihan Yang Terbaik", artist: "Ziva Magnolya" }, { title: "Easy On Me", artist: "Adele" },
+            { title: "Diri", artist: "Tulus" }, { title: "Shape of You", artist: "Ed Sheeran" }
         ];
 
         // --- DOM Elements & State Variables ---
@@ -200,7 +162,7 @@
         const buttonLoader = document.getElementById('button-loader');
         
         let songItems = [];
-        let forceItems = null; // Will hold the 4 custom songs from Firebase
+        let forceItems = null;
 
         // --- Utility Functions ---
         function setLoadingState(isLoading, message = "Loading...") {
@@ -208,11 +170,11 @@
             buttonText.textContent = message;
             if (isLoading) {
                 buttonLoader.classList.remove('hidden');
-                luckButton.style.paddingLeft = '3rem'; // Adjust padding for loader
+                luckButton.style.paddingLeft = '3rem';
                 luckButton.style.paddingRight = '3rem'; 
             } else {
                 buttonLoader.classList.add('hidden');
-                luckButton.style.paddingLeft = ''; // Reset padding
+                luckButton.style.paddingLeft = '';
                 luckButton.style.paddingRight = '';
             }
         }
@@ -222,7 +184,6 @@
             songListContainer.innerHTML = '';
             songs.forEach((song, index) => {
                 const songElement = document.createElement('div');
-                // Menggunakan p-2.5 atau p-3 agar tinggi tiap baris sedikit bertambah
                 songElement.className = 'song-item flex items-center p-3 rounded-md'; 
                 songElement.innerHTML = `
                     <div class="w-8 text-center text-gray-400">
@@ -241,67 +202,63 @@
             songItems = document.querySelectorAll('.song-item');
         }
 
+        /**
+         * PERBAIKAN: Mengatur tinggi kontainer agar pas menampilkan 4 lagu.
+         * Fungsi ini memastikan ukuran kotak konsisten di semua layar.
+         */
         function setListHeight() {
-            if (songItems.length >= 4) {
-                let totalHeight = 0;
-                // Mengukur tinggi 4 item pertama
-                for (let i = 0; i < 4; i++) {
-                    totalHeight += songItems[i].offsetHeight;
-                }
-                // Ditingkatkan sedikit untuk memberikan padding visual
-                songListContainer.style.height = `${totalHeight + 8}px`; 
+            // Memastikan 4 item sudah dirender dan memiliki tinggi yang bisa diukur
+            if (songItems.length < 4 || songItems[0].offsetHeight === 0) {
+                // Jika belum, coba lagi pada frame render berikutnya
+                requestAnimationFrame(setListHeight);
+                return;
             }
+            let totalHeight = 0;
+            // Mengukur tinggi total dari 4 item pertama
+            for (let i = 0; i < 4; i++) {
+                totalHeight += songItems[i].offsetHeight;
+            }
+            // Terapkan tinggi yang presisi ke kontainer scroll
+            songListContainer.style.height = `${totalHeight}px`;
         }
         
-        // --- Click Handler for the Final Items ---
         function handleForcedItemClick(event) {
             const songItem = event.currentTarget;
             const spotifyLink = songItem.dataset.spotifyLink;
 
             if (spotifyLink && ownerId && spectatorUid) {
-                // Disable further clicks
                 songItems.forEach(item => {
                     item.removeEventListener('click', handleForcedItemClick);
                     item.style.cursor = 'default';
-                    // Hapus highlight (jika ada, meskipun seharusnya tidak ada)
                     item.classList.remove('bg-green-700', 'bg-opacity-50', 'ring-2', 'ring-green-500'); 
                 });
 
                 setLoadingState(true, "Redirecting...");
 
-                // Gunakan ownerId (path) dan spectatorUid (key di bawah spectatorChoices)
-                const updates = {};
-                updates[`${ownerId}/spectatorChoices/${spectatorUid}`] = spotifyLink;
+                const spectatorChoicesRef = ref(database, `${ownerId}/spectatorChoices`);
+                const newChoice = { [spectatorUid]: spotifyLink };
                 
-                update(ref(database), updates)
+                set(spectatorChoicesRef, newChoice)
                     .then(() => { 
                         window.location.replace(spotifyLink); 
                     })
                     .catch(error => {
                         console.error("Error writing to Firebase:", error);
-                        // Redirect anyway even if database write fails
                         window.location.replace(spotifyLink);
                     });
             }
         }
 
-        /**
-         * Melakukan login anonim atau menggunakan custom token yang disediakan, 
-         * dan menetapkan spectatorUid.
-         */
         async function initFirebaseAndAuth() {
             setLoadingState(true, "Authenticating...");
             try {
-                if (initialAuthToken) {
-                    await signInWithCustomToken(auth, initialAuthToken);
-                } else {
-                    await signInAnonymously(auth);
-                }
-                // Setelah promise login selesai, auth.currentUser.uid dipastikan valid
-                spectatorUid = auth.currentUser.uid; 
+                const userCredential = initialAuthToken 
+                    ? await signInWithCustomToken(auth, initialAuthToken)
+                    : await signInAnonymously(auth);
+                
+                spectatorUid = userCredential.user.uid; 
                 console.log("Authenticated successfully. Spectator UID:", spectatorUid);
                 
-                // Panggil fungsi pemuatan data di sini, setelah autentikasi sukses.
                 await loadPlaylistData(); 
             } catch (error) {
                 console.error("Authentication failed:", error);
@@ -310,7 +267,6 @@
         }
 
         async function loadPlaylistData() {
-            // Periksa Owner ID
             const urlParams = new URLSearchParams(window.location.search);
             ownerId = urlParams.get('id');
 
@@ -322,7 +278,6 @@
 
             setLoadingState(true, "Loading Playlist...");
             try {
-                // JALUR DATA: ${ownerId}/forceItems.
                 const snapshot = await get(ref(database, `${ownerId}/forceItems`));
                 const data = snapshot.val();
 
@@ -334,7 +289,6 @@
                     setLoadingState(false, "Config Error");
                 }
             } catch (error) {
-                // Tangani error jika pembacaan gagal karena masalah rules atau koneksi.
                 console.error("Firebase read failed (likely permission error):", error);
                 setLoadingState(false, "Cannot Load Data");
             }
@@ -343,10 +297,9 @@
         // --- Main Application Logic ---
         document.addEventListener('DOMContentLoaded', () => {
             renderSongs();
-            setListHeight();
-            window.addEventListener('resize', setListHeight);
+            setListHeight(); // Panggil pertama kali
+            window.addEventListener('resize', setListHeight); // Panggil lagi saat ukuran jendela berubah
             
-            // Start the authentication and data loading process
             initFirebaseAndAuth();
         });
 
@@ -358,9 +311,7 @@
 
             songItems.forEach(item => {
                 item.classList.add('info-hidden');
-                item.classList.remove('info-visible');
-                // Hapus highlight dari semua item sebelum animasi dimulai
-                item.classList.remove('bg-green-700', 'bg-opacity-50', 'ring-2', 'ring-green-500'); 
+                item.classList.remove('info-visible', 'bg-green-700', 'bg-opacity-50', 'ring-2', 'ring-green-500'); 
             });
             
             const maxStartIndex = songs.length - 4;
@@ -376,32 +327,21 @@
                 songItems[randomStartIndex].scrollIntoView({ behavior: 'smooth', block: 'start' });
 
                 setTimeout(() => {
-                    // Update the 4 songs with forced data
                     for (let i = 0; i < 4; i++) {
                         const itemIndex = randomStartIndex + i;
                         const songItemElement = songItems[itemIndex];
                         const forcedItemData = forceItems[i];
 
-                        const titleEl = songItemElement.querySelector('.song-info .font-bold');
-                        const artistEl = songItemElement.querySelector('.song-info .text-sm');
-
-                        titleEl.textContent = forcedItemData.title;
-                        artistEl.textContent = forcedItemData.artist;
-
+                        songItemElement.querySelector('.song-info .font-bold').textContent = forcedItemData.title;
+                        songItemElement.querySelector('.song-info .text-sm').textContent = forcedItemData.artist;
                         songItemElement.dataset.spotifyLink = forcedItemData.link;
                         songItemElement.style.cursor = 'pointer';
                         songItemElement.addEventListener('click', handleForcedItemClick);
-                        
-                        // BARIS INI DIHAPUS: songItemElement.classList.add('bg-green-700', 'bg-opacity-50', 'ring-2', 'ring-green-500');
                     }
 
-                    // Show info and prepare for click
-                    songItems.forEach(item => {
-                        item.classList.remove('info-hidden');
-                        item.classList.add('info-visible');
-                    });
+                    songItems.forEach(item => item.classList.add('info-visible'));
                     setLoadingState(false, "Choose Your Fate");
-                    luckButton.disabled = true; // Disable main button, only allow clicking the songs
+                    luckButton.disabled = true;
                 }, 700); 
 
             }, 2500); 
