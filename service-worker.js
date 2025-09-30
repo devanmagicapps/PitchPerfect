@@ -43,7 +43,7 @@ self.addEventListener('activate', event => {
       );
     })
   );
-  return self.clients.claim(); // Ambil alih kontrol halaman
+  return self.clients.claim();
 });
 
 // Event 'fetch': Dipicu setiap kali aplikasi meminta resource (file, gambar, dll).
