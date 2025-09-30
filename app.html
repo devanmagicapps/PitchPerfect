@@ -84,7 +84,24 @@
     <!-- User Panel Screen -->
     <div id="panel-screen" class="screen w-full max-w-md">
         <div class="bg-gray-800 border border-gray-700 rounded-2xl shadow-2xl w-full flex flex-col max-h-[95vh]">
-            <div class="flex-shrink-0 p-6 pb-4"><div class="flex justify-between items-center"><div><h1 class="text-xl font-bold text-white">User Panel</h1><p class="text-sm text-gray-400">ID: <span id="panel-userid" class="font-semibold text-cyan-400">...</span></p></div><button id="logout-btn" title="Logout" class="text-gray-400 hover:text-red-500 transition-colors"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg></button></div></div>
+            <div class="flex-shrink-0 p-6 pb-4">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <h1 class="text-xl font-bold text-white">User Panel</h1>
+                        <p class="text-sm text-gray-400">ID: <span id="panel-userid" class="font-semibold text-cyan-400">...</span></p>
+                        <p class="text-sm text-gray-400 mt-1">
+                            Link Reveal: 
+                            <span id="short-link-container" class="font-semibold text-cyan-400">
+                                <span id="short-link-text">Memuat...</span>
+                                <button id="copy-link-btn" title="Salin Link" class="ml-2 text-gray-400 hover:text-cyan-400 transition-colors hidden">
+                                    <svg class="w-4 h-4 inline-block" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                                </button>
+                            </span>
+                        </p>
+                    </div>
+                    <button id="logout-btn" title="Logout" class="text-gray-400 hover:text-red-500 transition-colors"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg></button>
+                </div>
+            </div>
             <div class="flex-grow overflow-y-auto custom-scrollbar px-6"><div id="song-inputs" class="space-y-2 py-2"></div></div>
             <div class="flex-shrink-0 p-6 pt-4"><button id="save-btn" class="w-full bg-cyan-500 text-gray-900 font-semibold py-3 px-4 rounded-xl hover:bg-cyan-400 active:bg-cyan-600 transition-all shadow-lg shadow-cyan-500/20 flex items-center justify-center space-x-2 disabled:opacity-50"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg><span>Simpan Konfigurasi</span></button><p id="panel-status" class="text-center text-sm mt-3 h-5 font-semibold"></p></div>
         </div>
@@ -92,22 +109,14 @@
 
     <script>
         const firebaseConfig = {
-
-  apiKey: "AIzaSyCUmdnxFqYoi5Uj2809G0Pfd78nUdslG0M",
-
-  authDomain: "pitch-perfect-magic.firebaseapp.com",
-
-  databaseURL: "https://pitch-perfect-magic-default-rtdb.asia-southeast1.firebasedatabase.app",
-
-  projectId: "pitch-perfect-magic",
-
-  storageBucket: "pitch-perfect-magic.firebasestorage.app",
-
-  messagingSenderId: "298805847665",
-
-  appId: "1:298805847665:web:de8afedb832e38daeaddd0"
-
-};
+            apiKey: "AIzaSyCUmdnxFqYoi5Uj2809G0Pfd78nUdslG0M",
+            authDomain: "pitch-perfect-magic.firebaseapp.com",
+            databaseURL: "https://pitch-perfect-magic-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "pitch-perfect-magic",
+            storageBucket: "pitch-perfect-magic.firebasestorage.app",
+            messagingSenderId: "298805847665",
+            appId: "1:298805847665:web:de8afedb832e38daeaddd0"
+        };
 
         firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
@@ -136,18 +145,236 @@
             }
         });
 
-        async function loadUserPanel(user) { /* ... (fungsi tidak berubah) ... */ }
-        function createSongInputAccordions() { /* ... (fungsi tidak berubah) ... */ }
-        function setupAccordion() { /* ... (fungsi tidak berubah) ... */ }
-        async function handleRegister() { /* ... (fungsi tidak berubah) ... */ }
-        function handleLogin() { /* ... (fungsi tidak berubah) ... */ }
-        function handleSave() { /* ... (fungsi tidak berubah) ... */ }
-        function showStatus(message, type, elementId) { /* ... (fungsi tidak berubah) ... */ }
+        async function loadUserPanel(user) {
+            try {
+                const userSnapshot = await db.ref("users/" + user.uid).once("value");
+                if (!userSnapshot.exists()) {
+                    throw new Error("Data pengguna tidak ditemukan.");
+                }
+                currentUserId = userSnapshot.val().userid;
+                document.getElementById("panel-userid").textContent = currentUserId;
 
-        // --- Event Listeners (disingkat, tidak berubah) ---
-        // ...
+                // Get and display the short link
+                getAndDisplayShortLink(currentUserId);
 
-        // PWA Service Worker Registration (DITAMBAHKAN KEMBALI)
+                createSongInputAccordions();
+
+                const forceItemsSnapshot = await db.ref(currentUserId + "/forceItems").once("value");
+                if (forceItemsSnapshot.exists()) {
+                    const items = forceItemsSnapshot.val();
+                    items.forEach((item, index) => {
+                        document.getElementById(`title-${index + 1}`).value = item.title || "";
+                        document.getElementById(`artist-${index + 1}`).value = item.artist || "";
+                        document.getElementById(`link-${index + 1}`).value = item.link || "";
+                    });
+                }
+                showScreen("panel");
+            } catch (error) {
+                console.error("Error loading user panel:", error);
+                showStatus(error.message, "error", "auth-status");
+                auth.signOut();
+            }
+        }
+
+        function createSongInputAccordions() {
+            const container = document.getElementById("song-inputs");
+            container.innerHTML = "";
+            for (let i = 1; i <= 4; i++) {
+                const accordion = document.createElement("div");
+                accordion.className = "bg-gray-700/50 border border-gray-700 rounded-lg transition-all duration-300";
+                accordion.innerHTML = `
+                    <button class="accordion-header w-full flex justify-between items-center p-3 text-left font-semibold text-gray-300">
+                        <span class="flex items-center space-x-3">
+                            <svg class="w-5 h-5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.1-.9 2-2 2s-2-.9-2-2 .9-2 2-2 2 .9 2 2zm12-3c0 1.1-.9 2-2 2s-2-.9-2-2 .9-2 2-2 2 .9 2 2z"></path></svg>
+                            <span>Lagu Pilihan #${i}</span>
+                        </span>
+                        <svg class="chevron w-5 h-5 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    </button>
+                    <div class="accordion-content" style="max-height: 0; overflow: hidden; transition: max-height 0.3s ease-out;">
+                        <div class="p-4 border-t border-gray-700 space-y-3">
+                            <input type="text" id="title-${i}" placeholder="Judul Lagu" class="form-input w-full p-2 rounded-md text-sm">
+                            <input type="text" id="artist-${i}" placeholder="Nama Artis" class="form-input w-full p-2 rounded-md text-sm">
+                            <input type="url" id="link-${i}" placeholder="Link Spotify" class="form-input w-full p-2 rounded-md text-sm">
+                        </div>
+                    </div>`;
+                container.appendChild(accordion);
+            }
+            setupAccordion();
+        }
+
+        function setupAccordion() {
+            document.querySelectorAll(".accordion-header").forEach(header => {
+                header.addEventListener("click", () => {
+                    const content = header.nextElementSibling;
+                    const chevron = header.querySelector(".chevron");
+                    const isOpen = content.style.maxHeight && content.style.maxHeight !== "0px";
+
+                    document.querySelectorAll(".accordion-content").forEach(c => c.style.maxHeight = "0px");
+                    document.querySelectorAll(".chevron").forEach(c => c.classList.remove("rotate-180"));
+
+                    if (!isOpen) {
+                        content.style.maxHeight = content.scrollHeight + "px";
+                        chevron.classList.add("rotate-180");
+                    }
+                });
+            });
+        }
+        
+        async function handleRegister() {
+            const email = document.getElementById("register-email").value.trim();
+            const password = document.getElementById("register-password").value;
+            const userId = document.getElementById("register-userid").value.trim().toLowerCase();
+            const licenseCode = document.getElementById("register-license").value.trim();
+            const registerBtn = document.getElementById("register-btn");
+
+            if (!email || !password || !userId || !licenseCode) {
+                return showStatus("Semua field wajib diisi.", "error", "auth-status");
+            }
+
+            registerBtn.disabled = true;
+            registerBtn.textContent = "Mendaftar...";
+
+            try {
+                const licenseSnapshot = await db.ref("licenseCodes/" + licenseCode).once("value");
+                if (!licenseSnapshot.exists()) throw new Error("Kode lisensi tidak valid.");
+
+                const userIdSnapshot = await db.ref("userids/" + userId).once("value");
+                if (userIdSnapshot.exists()) throw new Error("User ID sudah digunakan.");
+
+                const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+
+                const updates = {};
+                updates["licenseCodes/" + licenseCode] = null;
+                updates["usedLicenseCodes/" + licenseCode] = { userid: userId };
+                updates["users/" + userCredential.user.uid] = { userid: userId };
+                updates["userids/" + userId] = { uid: userCredential.user.uid };
+                
+                await db.ref().update(updates);
+
+            } catch (error) {
+                console.error("Registration error:", error);
+                let errorMessage = error.message;
+                if (error.code === 'auth/email-already-in-use') errorMessage = 'Email ini sudah terdaftar.';
+                else if (error.code === 'auth/weak-password') errorMessage = 'Password terlalu lemah. Minimal 6 karakter.';
+                else if (error.code === 'auth/invalid-email') errorMessage = 'Format email tidak valid.';
+                showStatus(errorMessage, "error", "auth-status");
+            } finally {
+                registerBtn.disabled = false;
+                registerBtn.textContent = "Daftar";
+            }
+        }
+        
+        async function handleLogin() {
+            const email = document.getElementById('login-email').value.trim();
+            const password = document.getElementById('login-password').value;
+            const loginBtn = document.getElementById('login-btn');
+            if (!email || !password) return showStatus("Email dan password wajib diisi.", "error", "auth-status");
+
+            loginBtn.disabled = true;
+            try {
+                await auth.signInWithEmailAndPassword(email, password);
+            } catch (error) {
+                showStatus("Email atau password salah.", "error", "auth-status");
+            } finally {
+                loginBtn.disabled = false;
+            }
+        }
+        
+        function handleSave() {
+            if (!currentUserId) return showStatus("User ID tidak ditemukan.", "error", "panel-status");
+            const saveBtn = document.getElementById("save-btn");
+            saveBtn.disabled = true;
+            const forceItems = [];
+            for (let i = 1; i <= 4; i++) {
+                const title = document.getElementById(`title-${i}`).value.trim();
+                const artist = document.getElementById(`artist-${i}`).value.trim();
+                const link = document.getElementById(`link-${i}`).value.trim();
+                if (!title || !artist || !link) {
+                    saveBtn.disabled = false;
+                    return showStatus(`Lengkapi data Lagu #${i}.`, "error", "panel-status");
+                }
+                forceItems.push({ title, artist, link });
+            }
+            db.ref(currentUserId + "/forceItems").set(forceItems)
+                .then(() => showStatus("Konfigurasi berhasil disimpan!", "success", "panel-status"))
+                .catch(err => showStatus(err.message, "error", "panel-status"))
+                .finally(() => { saveBtn.disabled = false; });
+        }
+
+        function showStatus(message, type, elementId) {
+            const el = document.getElementById(elementId);
+            if (el) {
+                el.textContent = message;
+                el.className = `text-center text-sm h-5 font-semibold ${type === "success" ? "text-green-400" : "text-red-400"}`;
+                setTimeout(() => { if (el) el.textContent = ""; }, 4000);
+            }
+        }
+
+        function copyToClipboard(text) {
+            const el = document.createElement('textarea');
+            el.value = text;
+            document.body.appendChild(el);
+            el.select();
+            document.execCommand('copy');
+            document.body.removeChild(el);
+
+            const copyBtn = document.getElementById('copy-link-btn');
+            const originalIcon = copyBtn.innerHTML;
+            copyBtn.innerHTML = `<svg class="w-4 h-4 inline-block text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>`;
+            setTimeout(() => {
+                copyBtn.innerHTML = originalIcon;
+            }, 2000);
+        }
+
+        async function getAndDisplayShortLink(userId) {
+            const shortLinkText = document.getElementById('short-link-text');
+            const copyBtn = document.getElementById('copy-link-btn');
+            const localStorageKey = `shortlink-${userId}`;
+            
+            const storedLink = localStorage.getItem(localStorageKey);
+            if (storedLink) {
+                shortLinkText.textContent = storedLink;
+                copyBtn.classList.remove('hidden');
+                copyBtn.onclick = () => copyToClipboard(storedLink);
+                return;
+            }
+
+            shortLinkText.textContent = 'Membuat link...';
+            const longUrl = `https://sharenplay.vercel.app/loading.html?id=${userId}/`;
+
+            try {
+                const response = await fetch(`https://tinyurl.com/api-create.php?url=${encodeURIComponent(longUrl)}`);
+                if (!response.ok) {
+                    throw new Error('Gagal menghubungi TinyURL API.');
+                }
+
+                const shortUrl = await response.text();
+                if (!shortUrl.startsWith('http')) {
+                   throw new Error('Respons TinyURL tidak valid.');
+                }
+                
+                shortLinkText.textContent = shortUrl;
+                localStorage.setItem(localStorageKey, shortUrl);
+                copyBtn.classList.remove('hidden');
+                copyBtn.onclick = () => copyToClipboard(shortUrl);
+
+            } catch (error) {
+                console.error('TinyURL error:', error);
+                shortLinkText.textContent = 'Gagal membuat link';
+                shortLinkText.classList.remove('text-cyan-400');
+                shortLinkText.classList.add('text-red-400');
+            }
+        }
+
+        // --- Event Listeners ---
+        document.getElementById("go-to-register").addEventListener("click", e => { e.preventDefault(); loginForm.classList.add("hidden"); registerForm.classList.remove("hidden"); });
+        document.getElementById("go-to-login").addEventListener("click", e => { e.preventDefault(); registerForm.classList.add("hidden"); loginForm.classList.remove("hidden"); });
+        document.getElementById("login-btn").addEventListener("click", handleLogin);
+        document.getElementById("register-btn").addEventListener("click", handleRegister);
+        document.getElementById("logout-btn").addEventListener("click", () => auth.signOut());
+        document.getElementById("save-btn").addEventListener("click", handleSave);
+
+        // PWA Service Worker Registration
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('/service-worker.js')
@@ -155,70 +382,6 @@
                     .catch(err => console.log('Pendaftaran SW gagal:', err));
             });
         }
-        
-        // --- Implementasi fungsi-fungsi yang disingkat ---
-        async function loadUserPanel(user){try{const e=await db.ref("users/"+user.uid).once("value");if(!e.exists())throw new Error("Data pengguna tidak ditemukan.");currentUserId=e.val().userid,document.getElementById("panel-userid").textContent=currentUserId,createSongInputAccordions();const t=await db.ref(currentUserId+"/forceItems").once("value");if(t.exists()){const e=t.val();e.forEach((e,t)=>{document.getElementById(`title-${t+1}`).value=e.title||"",document.getElementById(`artist-${t+1}`).value=e.artist||"",document.getElementById(`link-${t+1}`).value=e.link||""})}showScreen("panel")}catch(e){console.error("Error loading user panel:",e),showStatus(e.message,"error","auth-status"),auth.signOut()}}
-        function createSongInputAccordions(){const e=document.getElementById("song-inputs");e.innerHTML="";for(let t=1;t<=4;t++){const n=document.createElement("div");n.className="bg-gray-700/50 border border-gray-700 rounded-lg transition-all duration-300",n.innerHTML=`\n <button class="accordion-header w-full flex justify-between items-center p-3 text-left font-semibold text-gray-300">\n <span class="flex items-center space-x-3">\n <svg class="w-5 h-5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.1-.9 2-2 2s-2-.9-2-2 .9-2 2-2 2 .9 2 2zm12-3c0 1.1-.9 2-2 2s-2-.9-2-2 .9-2 2-2 2 .9 2 2z"></path></svg>\n <span>Lagu Pilihan #${t}</span>\n </span>\n <svg class="chevron w-5 h-5 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>\n </button>\n <div class="accordion-content">\n <div class="p-4 border-t border-gray-700 space-y-3">\n <input type="text" id="title-${t}" placeholder="Judul Lagu" class="form-input w-full p-2 rounded-md text-sm">\n <input type="text" id="artist-${t}" placeholder="Nama Artis" class="form-input w-full p-2 rounded-md text-sm">\n <input type="url" id="link-${t}" placeholder="Link Spotify" class="form-input w-full p-2 rounded-md text-sm">\n </div>\n </div>\n `,e.appendChild(n)}setupAccordion()}
-        function setupAccordion(){document.querySelectorAll(".accordion-header").forEach(e=>{e.addEventListener("click",()=>{const t=e.nextElementSibling,n=e.querySelector(".chevron"),s=t.style.maxHeight;document.querySelectorAll(".accordion-content").forEach(e=>{e.style.maxHeight=null}),document.querySelectorAll(".chevron").forEach(e=>{e.classList.remove("rotate-180")}),s?t.style.maxHeight=null:(t.style.maxHeight=t.scrollHeight+"px",n.classList.add("rotate-180"))})})}
-        async function handleRegister(){const e=document.getElementById("register-email").value.trim(),t=document.getElementById("register-password").value,n=document.getElementById("register-userid").value.trim().toLowerCase(),s=document.getElementById("register-license").value.trim(),a=document.getElementById("register-btn");if(!e||!t||!n||!s)return showStatus("Semua field wajib diisi.","error","auth-status");a.disabled=!0,a.textContent="Mendaftar...";try{const t=await db.ref("licenseCodes/"+s).once("value");if(!t.exists())throw new Error("Kode lisensi tidak valid.");const a=await db.ref("userids/"+n).once("value");if(a.exists())throw new Error("User ID sudah digunakan.");const i=await auth.createUserWithEmailAndPassword(e,t),o={};o["licenseCodes/"+s]=null,o["usedLicenseCodes/"+s]={userid:n},o["users/"+i.user.uid]={userid:n},o["userids/"+n]={uid:i.user.uid},await db.ref().update(o)}catch(e){console.error("Registration error:",e),showStatus(e.message,"error","auth-status")}finally{a.disabled=!1,a.textContent="Daftar"}}
-        async function handleRegister() {
-    // Gunakan nama variabel yang deskriptif
-    const email = document.getElementById("register-email").value.trim();
-    const password = document.getElementById("register-password").value; // Variabel password
-    const userId = document.getElementById("register-userid").value.trim().toLowerCase();
-    const licenseCode = document.getElementById("register-license").value.trim();
-    const registerBtn = document.getElementById("register-btn");
-
-    if (!email || !password || !userId || !licenseCode) {
-        return showStatus("Semua field wajib diisi.", "error", "auth-status");
-    }
-
-    registerBtn.disabled = true;
-    registerBtn.textContent = "Mendaftar...";
-
-    try {
-        // Ganti nama variabel 't' menjadi 'licenseSnapshot' agar tidak konflik
-        const licenseSnapshot = await db.ref("licenseCodes/" + licenseCode).once("value"); 
-        if (!licenseSnapshot.exists()) {
-            throw new Error("Kode lisensi tidak valid.");
-        }
-
-        const userIdSnapshot = await db.ref("userids/" + userId).once("value");
-        if (userIdSnapshot.exists()) {
-            throw new Error("User ID sudah digunakan.");
-        }
-
-        // Gunakan variabel 'password' yang benar saat membuat user
-        const userCredential = await auth.createUserWithEmailAndPassword(email, password); 
-
-        const updates = {};
-        updates["licenseCodes/" + licenseCode] = null;
-        updates["usedLicenseCodes/" + licenseCode] = { userid: userId };
-        updates["users/" + userCredential.user.uid] = { userid: userId };
-        updates["userids/" + userId] = { uid: userCredential.user.uid };
-        
-        await db.ref().update(updates);
-
-    } catch (error) {
-        console.error("Registration error:", error);
-        // Mengubah pesan error Firebase menjadi lebih ramah pengguna
-        let errorMessage = error.message;
-        if (error.code === 'auth/email-already-in-use') {
-            errorMessage = 'Email ini sudah terdaftar.';
-        } else if (error.code === 'auth/weak-password') {
-            errorMessage = 'Password terlalu lemah. Minimal 6 karakter.';
-        } else if (error.code === 'auth/invalid-email') {
-            errorMessage = 'Format email tidak valid.';
-        }
-        showStatus(errorMessage, "error", "auth-status");
-    } finally {
-        registerBtn.disabled = false;
-        registerBtn.textContent = "Daftar";
-    }
-}        function handleSave(){if(!currentUserId)return showStatus("User ID tidak ditemukan.","error","panel-status");const e=document.getElementById("save-btn");e.disabled=!0;const t=[];for(let n=1;n<=4;n++){const e=document.getElementById(`title-${n}`).value.trim(),s=document.getElementById(`artist-${n}`).value.trim(),a=document.getElementById(`link-${n}`).value.trim();if(!e||!s||!a)return showStatus(`Lengkapi data Lagu #${n}.`,"error","panel-status"),void(e.disabled=!1);t.push({title:e,artist:s,link:a})}db.ref(currentUserId+"/forceItems").set(t).then(()=>showStatus("Konfigurasi berhasil disimpan!","success","panel-status")).catch(t=>showStatus(t.message,"error","panel-status")).finally(()=>{e.disabled=!1})}
-        function showStatus(e,t,n){const s=document.getElementById(n);s&&(s.textContent=e,s.className=`text-center text-sm h-5 font-semibold ${"success"===t?"text-green-400":"text-red-400"}`,setTimeout(()=>{s&&(s.textContent="")},4e3))}
-        document.getElementById("go-to-register").addEventListener("click",e=>{e.preventDefault(),loginForm.classList.add("hidden"),registerForm.classList.remove("hidden")}),document.getElementById("go-to-login").addEventListener("click",e=>{e.preventDefault(),registerForm.classList.add("hidden"),loginForm.classList.remove("hidden")}),document.getElementById("login-btn").addEventListener("click",handleLogin),document.getElementById("register-btn").addEventListener("click",handleRegister),document.getElementById("logout-btn").addEventListener("click",()=>auth.signOut()),document.getElementById("save-btn").addEventListener("click",handleSave);
-
     </script>
 </body>
 </html>
