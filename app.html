@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Pitch Perfect - User Panel</title>
     
-    <!-- PWA Tags (DITAMBAHKAN KEMBALI) -->
+    <!-- PWA Tags -->
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#111827">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -23,8 +23,21 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
     <style>
-        html, body { overflow: hidden; height: 100%; width: 100%; position: fixed; }
-        body { font-family: 'Inter', sans-serif; -webkit-user-select: none; user-select: none; background-color: #030712; }
+        html, body { 
+            height: 100%; 
+            width: 100%; 
+        }
+        body { 
+            font-family: 'Inter', sans-serif; 
+            -webkit-user-select: none; 
+            user-select: none; 
+            background-color: #030712; 
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1rem;
+        }
         h1, h2, h3 { font-family: 'Lora', serif; }
         
         .custom-scrollbar::-webkit-scrollbar { width: 6px; }
@@ -32,7 +45,15 @@
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #374151; border-radius: 10px; }
         
         .screen { display: none; }
-        .screen.active { display: flex; animation: fadeIn 0.5s ease-in-out; }
+        .screen.active { 
+            display: flex; 
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            animation: fadeIn 0.5s ease-in-out; 
+            width: 100%;
+            height: 100%;
+        }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         
         .input-group { position: relative; }
@@ -47,14 +68,14 @@
         .sound-bar:nth-child(2) { animation-delay: 0.1s; } .sound-bar:nth-child(3) { animation-delay: 0.2s; } .sound-bar:nth-child(4) { animation-delay: 0.3s; }
     </style>
 </head>
-<body class="text-gray-200 flex items-center justify-center p-4">
+<body class="text-gray-200">
 
     <!-- Loading Screen -->
     <div id="loader" class="screen absolute inset-0 bg-gray-900 justify-center items-center">
         <div class="flex items-center justify-center space-x-2"><div class="sound-bar"></div><div class="sound-bar"></div><div class="sound-bar"></div><div class="sound-bar"></div></div>
     </div>
 
-    <!-- Login & Register Screens -->
+    <!-- Auth Screens Container -->
     <div id="auth-screen" class="screen w-full max-w-sm">
         <div class="bg-gray-800 border border-gray-700 rounded-2xl shadow-2xl w-full p-8 space-y-6">
             <div id="login-form">
@@ -81,30 +102,32 @@
         </div>
     </div>
     
-    <!-- User Panel Screen -->
-    <div id="panel-screen" class="screen w-full max-w-md">
-        <div class="bg-gray-800 border border-gray-700 rounded-2xl shadow-2xl w-full flex flex-col max-h-[95vh]">
-            <div class="flex-shrink-0 p-6 pb-4">
-                <div class="flex justify-between items-start">
-                    <div>
-                        <h1 class="text-xl font-bold text-white">User Panel</h1>
-                        <p class="text-sm text-gray-400">ID: <span id="panel-userid" class="font-semibold text-cyan-400">...</span></p>
-                        <p class="text-sm text-gray-400 mt-1">
-                            Link Reveal: 
-                            <span id="short-link-container" class="font-semibold text-cyan-400">
-                                <span id="short-link-text">Memuat...</span>
-                                <button id="copy-link-btn" title="Salin Link" class="ml-2 text-gray-400 hover:text-cyan-400 transition-colors hidden">
-                                    <svg class="w-4 h-4 inline-block" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
-                                </button>
-                            </span>
-                        </p>
+    <!-- User Panel Screen (No Container) -->
+    <div id="panel-screen" class="screen w-full max-w-md h-full justify-between">
+        <!-- Header Section -->
+        <header class="w-full py-6 px-4 border-b border-gray-800">
+            <div class="flex justify-between items-start">
+                <div>
+                    <h1 class="text-xl font-bold text-white">User Panel</h1>
+                    <p class="text-sm text-gray-400">ID: <span id="panel-userid" class="font-semibold text-cyan-400">...</span></p>
+                    <div id="link-display-area" class="text-sm text-gray-400 mt-2">
+                        <!-- Content is generated by JS -->
                     </div>
-                    <button id="logout-btn" title="Logout" class="text-gray-400 hover:text-red-500 transition-colors"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg></button>
                 </div>
+                <button id="logout-btn" title="Logout" class="text-gray-400 hover:text-red-500 transition-colors"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg></button>
             </div>
-            <div class="flex-grow overflow-y-auto custom-scrollbar px-6"><div id="song-inputs" class="space-y-2 py-2"></div></div>
-            <div class="flex-shrink-0 p-6 pt-4"><button id="save-btn" class="w-full bg-cyan-500 text-gray-900 font-semibold py-3 px-4 rounded-xl hover:bg-cyan-400 active:bg-cyan-600 transition-all shadow-lg shadow-cyan-500/20 flex items-center justify-center space-x-2 disabled:opacity-50"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg><span>Simpan Konfigurasi</span></button><p id="panel-status" class="text-center text-sm mt-3 h-5 font-semibold"></p></div>
-        </div>
+        </header>
+
+        <!-- Main Content (Songs) -->
+        <main class="w-full flex-grow overflow-y-auto custom-scrollbar px-4">
+            <div id="song-inputs" class="space-y-2 py-4"></div>
+        </main>
+        
+        <!-- Footer Section -->
+        <footer class="w-full py-6 px-4 border-t border-gray-800">
+            <button id="save-btn" class="w-full bg-cyan-500 text-gray-900 font-semibold py-3 px-4 rounded-xl hover:bg-cyan-400 active:bg-cyan-600 transition-all shadow-lg shadow-cyan-500/20 flex items-center justify-center space-x-2 disabled:opacity-50"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg><span>Simpan Konfigurasi</span></button>
+            <p id="panel-status" class="text-center text-sm mt-3 h-5 font-semibold"></p>
+        </footer>
     </div>
 
     <script>
@@ -131,6 +154,9 @@
         const registerForm = document.getElementById('register-form');
         let currentUserId = null;
 
+        // --- Dub.co Configuration ---
+        const DUB_CO_API_KEY = "dub_Pqce74nLhFMjbKcJqcdg29gW";
+
         function showScreen(screenName) {
             Object.values(screens).forEach(s => s.classList.remove('active'));
             screens[screenName].classList.add('active');
@@ -154,9 +180,7 @@
                 currentUserId = userSnapshot.val().userid;
                 document.getElementById("panel-userid").textContent = currentUserId;
 
-                // Get and display the short link
                 getAndDisplayShortLink(currentUserId);
-
                 createSongInputAccordions();
 
                 const forceItemsSnapshot = await db.ref(currentUserId + "/forceItems").once("value");
@@ -181,7 +205,7 @@
             container.innerHTML = "";
             for (let i = 1; i <= 4; i++) {
                 const accordion = document.createElement("div");
-                accordion.className = "bg-gray-700/50 border border-gray-700 rounded-lg transition-all duration-300";
+                accordion.className = "bg-gray-800 border border-gray-700 rounded-lg transition-all duration-300";
                 accordion.innerHTML = `
                     <button class="accordion-header w-full flex justify-between items-center p-3 text-left font-semibold text-gray-300">
                         <span class="flex items-center space-x-3">
@@ -318,7 +342,8 @@
             document.execCommand('copy');
             document.body.removeChild(el);
 
-            const copyBtn = document.getElementById('copy-link-btn');
+            const copyBtn = document.querySelector('#link-display-area button');
+            if (!copyBtn) return;
             const originalIcon = copyBtn.innerHTML;
             copyBtn.innerHTML = `<svg class="w-4 h-4 inline-block text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>`;
             setTimeout(() => {
@@ -326,43 +351,88 @@
             }, 2000);
         }
 
+        function showShortLinkFallback(userId) {
+             const linkDisplayArea = document.getElementById('link-display-area');
+             const longUrl = `https://sharenplay.vercel.app/loading.html?id=${userId}/`;
+             const displayUrl = longUrl.replace('https://', '');
+
+             linkDisplayArea.innerHTML = `
+                <p>Link Reveal: 
+                    <span class="font-semibold text-red-400">${displayUrl}</span>
+                    <button title="Salin Link" onclick="copyToClipboard('${displayUrl}')" class="ml-2 text-gray-400 hover:text-cyan-400 transition-colors">
+                        <svg class="w-4 h-4 inline-block" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                    </button>
+                </p>
+                <p class="text-xs text-gray-500 mt-1">Gagal membuat link pendek. Coba perpendek manual di bit.ly atau 
+                    <button onclick="retryShortLink('${userId}')" class="underline hover:text-cyan-400">coba lagi</button>.
+                </p>
+             `;
+        }
+        
+        window.copyToClipboard = copyToClipboard; // Make it globally accessible for inline onclick
+        
+        window.retryShortLink = (userId) => {
+            const localStorageKey = `shortlink-${userId}`;
+            localStorage.removeItem(localStorageKey);
+            document.getElementById('link-display-area').innerHTML = `<p>Link Reveal: <span class="font-semibold text-cyan-400">Memuat...</span></p>`;
+            getAndDisplayShortLink(userId);
+        }
+
         async function getAndDisplayShortLink(userId) {
-            const shortLinkText = document.getElementById('short-link-text');
-            const copyBtn = document.getElementById('copy-link-btn');
+            const linkDisplayArea = document.getElementById('link-display-area');
             const localStorageKey = `shortlink-${userId}`;
             
-            const storedLink = localStorage.getItem(localStorageKey);
-            if (storedLink) {
-                shortLinkText.textContent = storedLink;
-                copyBtn.classList.remove('hidden');
-                copyBtn.onclick = () => copyToClipboard(storedLink);
+            const storedValue = localStorage.getItem(localStorageKey);
+            if (storedValue) {
+                if (storedValue === 'failed') {
+                    showShortLinkFallback(userId);
+                } else {
+                    linkDisplayArea.innerHTML = `
+                        <p>Link Reveal: 
+                            <span class="font-semibold text-cyan-400">${storedValue}</span>
+                             <button title="Salin Link" onclick="copyToClipboard('${storedValue}')" class="ml-2 text-gray-400 hover:text-cyan-400 transition-colors">
+                                <svg class="w-4 h-4 inline-block" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                            </button>
+                        </p>`;
+                }
                 return;
             }
 
-            shortLinkText.textContent = 'Membuat link...';
+            linkDisplayArea.innerHTML = `<p>Link Reveal: <span class="font-semibold text-cyan-400">Membuat link...</span></p>`;
             const longUrl = `https://sharenplay.vercel.app/loading.html?id=${userId}/`;
 
             try {
-                const response = await fetch(`https://tinyurl.com/api-create.php?url=${encodeURIComponent(longUrl)}`);
+                const response = await fetch('https://api.dub.co/links', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${DUB_CO_API_KEY}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ url: longUrl })
+                });
+
                 if (!response.ok) {
-                    throw new Error('Gagal menghubungi TinyURL API.');
+                    const errorData = await response.json();
+                    throw new Error(errorData.error.message || 'Gagal menghubungi Dub.co API.');
                 }
 
-                const shortUrl = await response.text();
-                if (!shortUrl.startsWith('http')) {
-                   throw new Error('Respons TinyURL tidak valid.');
-                }
-                
-                shortLinkText.textContent = shortUrl;
-                localStorage.setItem(localStorageKey, shortUrl);
-                copyBtn.classList.remove('hidden');
-                copyBtn.onclick = () => copyToClipboard(shortUrl);
+                const data = await response.json();
+                const shortUrl = data.shortLink;
+                const displayUrl = shortUrl.replace('https://', '');
+
+                localStorage.setItem(localStorageKey, displayUrl);
+                linkDisplayArea.innerHTML = `
+                     <p>Link Reveal: 
+                        <span class="font-semibold text-cyan-400">${displayUrl}</span>
+                         <button title="Salin Link" onclick="copyToClipboard('${displayUrl}')" class="ml-2 text-gray-400 hover:text-cyan-400 transition-colors">
+                            <svg class="w-4 h-4 inline-block" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                        </button>
+                    </p>`;
 
             } catch (error) {
-                console.error('TinyURL error:', error);
-                shortLinkText.textContent = 'Gagal membuat link';
-                shortLinkText.classList.remove('text-cyan-400');
-                shortLinkText.classList.add('text-red-400');
+                console.error('Dub.co error:', error);
+                localStorage.setItem(localStorageKey, 'failed');
+                showShortLinkFallback(userId);
             }
         }
 
