@@ -3,18 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Now Playing - Loading...</title>
+    <title>Loading...</title>
     
     <!-- Font Awesome untuk Ikon -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-    
-    <!-- Firebase SDK Modular Imports -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js";
-        window.firebaseModules = { initializeApp, getAuth, signInAnonymously, signInWithCustomToken, getDatabase, ref, onValue };
-    </script>
     
     <style>
         /* Import Google Font yang mirip dengan font Spotify */
@@ -62,9 +54,8 @@
         }
 
         @keyframes shimmer {
-            /* KOREKSI: Menghapus transform: rotate(360deg) yang menyebabkan putaran */
             0% { background-position: 200% 0; }
-            100% { background-position: -200% 0; } /* Animasi geser background */
+            100% { background-position: -200% 0; }
         }
         
         .top-bar { display: flex; justify-content: space-between; align-items: center; }
@@ -109,12 +100,11 @@
         }
 
         .popup-box {
-            /* REVISI: Menggunakan flexbox untuk perataan sempurna */
             display: flex;
             flex-direction: column;
-            align-items: center; /* Memastikan semua item center secara horizontal */
-            gap: 1rem; /* Jarak konsisten antar elemen */
-            text-align: center; /* Meratakan teks di dalam elemen */
+            align-items: center;
+            gap: 1rem;
+            text-align: center;
             color: white;
             max-width: 300px;
         }
@@ -135,7 +125,7 @@
         .wakeup-button {
             width: 120px;
             height: 120px;
-            background-color: #1DB954; /* Spotify Green */
+            background-color: #1DB954;
             border-radius: 50%;
             display: flex;
             justify-content: center;
@@ -143,7 +133,7 @@
             cursor: pointer;
             box-shadow: 0 0 20px rgba(29, 185, 84, 0.5);
             transition: transform 0.2s ease, box-shadow 0.2s ease;
-            margin-top: 0.5rem; /* Sedikit jarak tambahan dari teks */
+            margin-top: 0.5rem;
         }
         .wakeup-button:hover {
             transform: scale(1.05);
@@ -157,7 +147,6 @@
 </head>
 <body>
 
-    <!-- KONTEN LAMA (Tidak Diubah) -->
     <div class="player-container">
         <div class="top-bar">
             <i class="fas fa-chevron-down icon"></i>
@@ -189,9 +178,7 @@
             </div>
         </div>
     </div>
-    <!-- AKHIR KONTEN LAMA -->
 
-    <!-- Pop-up Wake Lock (Struktur HTML tetap sama) -->
     <div id="wake-lock-overlay">
         <div class="popup-box">
             <h2>Mencegah Layar Mati</h2>
@@ -202,7 +189,13 @@
         </div>
     </div>
 
-    <script>
+    <!-- SCRIPT GABUNGAN (SOLUSI) -->
+    <script type="module">
+        // --- Firebase Modular Imports ---
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js";
+
         // --- Firebase Configuration ---
         const defaultFirebaseConfig = {
             apiKey: "AIzaSyCUmdnxFqYoi5Uj2809G0Pfd78nUdslG0M",
@@ -220,47 +213,39 @@
 
         let app, auth, db;
         
-        // isFirstData menjadi penanda bahwa data pertama yang dibaca (data awal) sudah diterima.
+        // Penanda untuk membedakan data awal saat load dan data update
         let isFirstData = true; 
 
         // --- Core Functions ---
 
         /**
-         * Menginisialisasi Firebase dan melakukan login anonim atau menggunakan custom token.
+         * Menginisialisasi Firebase dan melakukan login.
          */
         async function initFirebaseAndAuth() {
-            if (typeof window.firebaseModules === 'undefined') {
-                console.error("Firebase modular SDK not loaded.");
-                return;
-            }
-
-            const { initializeApp, getAuth, signInAnonymously, signInWithCustomToken, getDatabase } = window.firebaseModules;
-            
             try {
                 app = initializeApp(firebaseConfig);
                 auth = getAuth(app);
                 db = getDatabase(app);
 
-                // Lakukan login
                 if (initialAuthToken) {
                     await signInWithCustomToken(auth, initialAuthToken);
                 } else {
                     await signInAnonymously(auth);
                 }
                 
-                // Setelah login sukses, lanjutkan pemuatan data
+                console.log("[STATUS] Autentikasi Firebase berhasil.");
+                // Setelah login sukses, pasang listener database
                 setupRealtimeListener();
 
             } catch (error) {
-                console.error("Firebase Initialization or Authentication failed:", error);
+                console.error("Inisialisasi atau Autentikasi Firebase gagal:", error);
             }
         }
         
         /**
-         * Memasang listener database setelah autentikasi sukses.
+         * Memasang listener ke Realtime Database.
          */
         function setupRealtimeListener() {
-            const { ref, onValue } = window.firebaseModules;
             const urlParams = new URLSearchParams(window.location.search);
             const ownerId = urlParams.get('id');
 
@@ -269,61 +254,61 @@
                 return;
             }
 
-            // MENDENGARKAN spectatorChoices sesuai instruksi
             const spectatorChoicesRef = ref(db, `${ownerId}/spectatorChoices`);
 
-            // Memasang Realtime Listener
             onValue(spectatorChoicesRef, (snapshot) => {
                 const data = snapshot.val();
                 
+                // --- LOGIKA UTAMA ---
+                // Blok ini dieksekusi saat pertama kali halaman dimuat.
+                // Tujuannya adalah untuk "mengabaikan" data awal dan hanya bereaksi pada PERUBAHAN.
                 if (isFirstData) {
-                    isFirstData = false;
+                    isFirstData = false; // Set flag agar blok ini tidak dijalankan lagi
                     
-                    // Logic untuk data pertama (menganggap ini data awal yang valid)
                     if (data) {
-                        console.log("[STATUS] Listener aktif. Data awal di spectatorChoices diterima:", data);
-                        // JIKA ANDA INGIN REDIRECT PADA DATA AWAL, HAPUS KOMENTAR DI BAWAH INI
-                        // attemptRedirect(data); 
+                        console.log("[STATUS] Listener aktif. Data awal diterima:", data);
                     } else {
-                        console.log("[STATUS] Listener aktif. Data awal di spectatorChoices kosong.");
+                        console.log("[STATUS] Listener aktif. Path data awal masih kosong.");
                     }
-                    return;
+                    return; // Penting: Hentikan eksekusi di sini untuk data pertama
                 }
                 
-                // --- LOGIKA UPDATE DATA BARU ---
-                
+                // Blok ini hanya akan dieksekusi untuk PERUBAHAN DATA KEDUA DAN SETERUSNYA
                 if (data) {
-                    console.log("[UPDATE] Data baru terdeteksi di spectatorChoices:", data);
+                    console.log("[UPDATE] Data berubah atau baru ditambahkan:", data);
                     attemptRedirect(data);
                 } else {
-                    console.log("[UPDATE] spectatorChoices dihapus atau kosong.");
+                    console.log("[UPDATE] Data dihapus.");
                 }
+            }, (error) => {
+                console.error("Gagal memasang listener Firebase:", error);
             });
         }
         
         /**
-         * Logika untuk mencari link dan melakukan redirect.
-         * @param {Object | String} data - Data dari Firebase (node spectatorChoices).
+         * Mencoba mencari link Spotify yang valid dan melakukan redirect.
+         * @param {Object | String} data - Data dari node spectatorChoices di Firebase.
          */
         function attemptRedirect(data) {
             let latestLink = null;
             
-            // Logika untuk menangani data yang berupa objek {UID: Link}
+            // Jika data adalah objek (misal: { UID: "link" })
             if (typeof data === 'object' && data !== null) {
-                // Cari link Spotify yang valid di antara nilai-nilai objek
                const links = Object.values(data).filter(link => typeof link === 'string' && link.startsWith('https://open.spotify.com'));
                if (links.length > 0) {
-                   // Ambil link yang terakhir (walaupun tidak ada jaminan ini yang terbaru di Realtime DB)
                    latestLink = links[links.length - 1]; 
                }
-            } else if (typeof data === 'string' && data.startsWith('https://open.spotify.com')) {
-               // Menangani kasus jika node bukan objek (misal, hanya string)
+            } 
+            // Jika data hanya string tunggal
+            else if (typeof data === 'string' && data.startsWith('https://open.spotify.com')) {
                latestLink = data;
             }
 
             if (latestLink) {
-                 console.log("[REDIRECT] Mengalihkan ke link Spotify terbaru:", latestLink);
+                 console.log("[REDIRECT] Link valid ditemukan. Mengalihkan ke:", latestLink);
                  window.location.replace(latestLink);
+            } else {
+                 console.log("[REDIRECT] Tidak ada link Spotify yang valid pada data terbaru.");
             }
         }
 
@@ -352,9 +337,8 @@
         wakeupBtn.addEventListener('click', requestWakeLock);
 
         // --- Main Event Listener ---
-        document.addEventListener('DOMContentLoaded', () => {
-            initFirebaseAndAuth();
-        });
+        // Karena ini adalah module, script akan otomatis dieksekusi setelah DOM siap
+        initFirebaseAndAuth();
 
     </script>
 </body>
