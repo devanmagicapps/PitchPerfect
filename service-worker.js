@@ -1,89 +1,78 @@
-// Nama cache dan versinya. Ubah versi ini jika Anda memperbarui file.
-const CACHE_NAME = 'pitch-perfect-user-panel-v2';
-
-// Daftar file inti yang akan disimpan di cache untuk mode offline.
-const URLS_TO_CACHE = [
+const CACHE_NAME = 'pitch-perfect-v2';
+// Daftar file yang akan di-cache saat instalasi.
+// Sesuaikan dengan nama file dan path yang benar di proyek Anda.
+const urlsToCache = [
+  '/',
   '/app.html',
-  '/', // Alihkan ke halaman utama jika offline
-  // CSS & Fonts dari Google (URL lengkap)
+  '/index.html',
+  '/loading.html',
+  '/admin.html',
+  '/manifest.json',
+  '/icons/icon-192x192.png',
   'https://cdn.tailwindcss.com',
-  'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Lora:wght@500;600&display=swap',
-  // Ikon (sesuaikan path jika berbeda)
-  'icons/icon-192x192.png',
-  'icons/icon-512x512.png'
+  'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Lora:wght@500;600&display=swap'
 ];
 
-// Event 'install': Dipicu saat service worker pertama kali diinstal.
+// Event: Install
+// Saat service worker diinstal, cache file-file utama.
 self.addEventListener('install', event => {
-  console.log('Service Worker: Menginstal...');
-  // Tunggu hingga proses caching selesai sebelum melanjutkan.
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then(cache => {
-        console.log('Service Worker: Membuka cache dan menyimpan file inti');
-        return cache.addAll(URLS_TO_CACHE);
+        console.log('Cache dibuka');
+        return cache.addAll(urlsToCache);
       })
-      .then(() => self.skipWaiting()) // Aktifkan service worker baru segera
   );
 });
 
-// Event 'activate': Dipicu saat service worker diaktifkan.
-// Berguna untuk membersihkan cache lama.
+// Event: Activate
+// Hapus cache lama jika ada versi baru.
 self.addEventListener('activate', event => {
-  console.log('Service Worker: Mengaktifkan...');
   event.waitUntil(
     caches.keys().then(cacheNames => {
       return Promise.all(
-        cacheNames.map(cache => {
-          if (cache !== CACHE_NAME) {
-            console.log('Service Worker: Menghapus cache lama', cache);
-            return caches.delete(cache);
-          }
+        cacheNames.filter(cacheName => {
+          // Hapus cache jika namanya tidak sama dengan cache saat ini.
+          return cacheName !== CACHE_NAME;
+        }).map(cacheName => {
+          return caches.delete(cacheName);
         })
       );
     })
   );
-  return self.clients.claim();
 });
 
-// Event 'fetch': Dipicu setiap kali aplikasi meminta resource (file, gambar, dll).
-// Ini adalah inti dari fungsionalitas offline.
+// Event: Fetch
+// Tangani semua permintaan jaringan.
 self.addEventListener('fetch', event => {
-  // Kita hanya akan menangani request GET (bukan POST ke Firebase, dll.)
-  if (event.request.method !== 'GET') return;
-
   event.respondWith(
-    caches.match(event.request)
+    // 1. Coba ambil dari jaringan terlebih dahulu (Network First)
+    fetch(event.request)
       .then(response => {
-        // Jika resource ditemukan di cache, langsung kembalikan dari cache.
-        if (response) {
-          console.log('Service Worker: Mengambil dari cache:', event.request.url);
-          return response;
-        }
-
-        // Jika tidak ada di cache, coba ambil dari network.
-        console.log('Service Worker: Mengambil dari network:', event.request.url);
-        return fetch(event.request);
+        // Jika berhasil, perbarui cache dengan versi terbaru
+        // dan kembalikan respons dari jaringan.
+        
+        // Buat klon dari respons. Respons hanya bisa dibaca sekali.
+        const responseToCache = response.clone();
+        
+        caches.open(CACHE_NAME)
+          .then(cache => {
+            cache.put(event.request, responseToCache);
+          });
+          
+        return response;
       })
       .catch(error => {
-        // Jika network gagal (offline), ini adalah fallback.
-        console.log('Service Worker: Gagal mengambil dari network, error:', error);
-        // Anda bisa mengembalikan halaman offline default di sini jika mau.
+        // 2. Jika jaringan gagal (offline), coba ambil dari cache
+        console.log('Gagal mengambil dari jaringan, mencoba dari cache...', error);
+        return caches.match(event.request)
+          .then(response => {
+            if (response) {
+              // Jika ada di cache, kembalikan versi dari cache.
+              return response;
+            }
+            // Jika tidak ada di jaringan maupun di cache, akan menghasilkan error standar browser.
+          });
       })
   );
 });
-
-Langkah Selanjutnya:
- * Letakkan File: Simpan kedua file ini (manifest.json dan service-worker.js) di direktori root proyek Anda, di level yang sama dengan admin-panel.html.
- * Buat Folder Ikon: Buat sebuah folder bernama icons di direktori root, dan letakkan file ikon Anda (icon-192x192.png dan icon-512x512.png) di dalamnya.
- * Verifikasi HTML: Pastikan di dalam <head> file admin-panel.html Anda sudah ada referensi ke manifest:
-   <link rel="manifest" href="manifest.json">
-
- * Verifikasi Pendaftaran Service Worker: Pastikan di dalam <script> file admin-panel.html Anda ada kode untuk mendaftarkan service worker (yang sudah ada di versi sebelumnya):
-   if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/service-worker.js')
-            .then(reg => console.log('SW terdaftar!', reg))
-            .catch(err => console.log('Pendaftaran SW gagal:', err));
-    });
-}
