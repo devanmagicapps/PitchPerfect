@@ -378,64 +378,70 @@
             getAndDisplayShortLink(userId);
         }
 
-        async function getAndDisplayShortLink(userId) {
-            const linkDisplayArea = document.getElementById('link-display-area');
-            const localStorageKey = `shortlink-${userId}`;
-            
-            const storedValue = localStorage.getItem(localStorageKey);
-            if (storedValue) {
-                if (storedValue === 'failed') {
-                    showShortLinkFallback(userId);
-                } else {
-                    linkDisplayArea.innerHTML = `
-                        <p>Link Reveal: 
-                            <span class="font-semibold text-cyan-400">${storedValue}</span>
-                             <button title="Salin Link" onclick="copyToClipboard('${storedValue}')" class="ml-2 text-gray-400 hover:text-cyan-400 transition-colors">
-                                <svg class="w-4 h-4 inline-block" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
-                            </button>
-                        </p>`;
-                }
-                return;
-            }
+       async function getAndDisplayShortLink(userId) {
+    const linkDisplayArea = document.getElementById('link-display-area');
+    const localStorageKey = `shortlink-${userId}`;
+    
+    const storedValue = localStorage.getItem(localStorageKey);
+    if (storedValue) {
+        if (storedValue === 'failed') {
+            showShortLinkFallback(userId);
+        } else {
+            linkDisplayArea.innerHTML = `
+                <p>Link Reveal: 
+                    <span class="font-semibold text-cyan-400">${storedValue}</span>
+                    <button title="Salin Link" onclick="copyToClipboard('${storedValue}')" class="ml-2 text-gray-400 hover:text-cyan-400 transition-colors">
+                        <svg class="w-4 h-4 inline-block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2
+                                   m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0
+                                   00-2 2v8a2 2 0 002 2z"></path>
+                        </svg>
+                    </button>
+                </p>`;
+        }
+        return;
+    }
 
-            linkDisplayArea.innerHTML = `<p>Link Reveal: <span class="font-semibold text-cyan-400">Membuat link...</span></p>`;
-            const longUrl = `https://sharenplay.vercel.app/loading.html?id=${userId}/`;
+    linkDisplayArea.innerHTML = `<p>Link Reveal: <span class="font-semibold text-cyan-400">Membuat link...</span></p>`;
+    const longUrl = `https://sharenplay.vercel.app/loading.html?id=${userId}/`;
 
-            try {
-                const response = await fetch('https://api.dub.co/links', {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${DUB_CO_API_KEY}`,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ url: longUrl })
-                });
+    try {
+        // panggil API route di Vercel, bukan langsung Dub.co
+        const response = await fetch('/api/shorten', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ url: longUrl })
+        });
 
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.error.message || 'Gagal menghubungi Dub.co API.');
-                }
+        const data = await response.json();
 
-                const data = await response.json();
-                const shortUrl = data.shortLink;
-                const displayUrl = shortUrl.replace('https://', '');
-
-                localStorage.setItem(localStorageKey, displayUrl);
-                linkDisplayArea.innerHTML = `
-                     <p>Link Reveal: 
-                        <span class="font-semibold text-cyan-400">${displayUrl}</span>
-                         <button title="Salin Link" onclick="copyToClipboard('${displayUrl}')" class="ml-2 text-gray-400 hover:text-cyan-400 transition-colors">
-                            <svg class="w-4 h-4 inline-block" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
-                        </button>
-                    </p>`;
-
-            } catch (error) {
-                console.error('Dub.co error:', error);
-                localStorage.setItem(localStorageKey, 'failed');
-                showShortLinkFallback(userId);
-            }
+        if (!response.ok || !data.shortUrl) {
+            throw new Error(data.error || 'Gagal membuat short link.');
         }
 
+        const displayUrl = data.shortUrl.replace('https://', '');
+        localStorage.setItem(localStorageKey, displayUrl);
+
+        linkDisplayArea.innerHTML = `
+             <p>Link Reveal: 
+                <span class="font-semibold text-cyan-400">${displayUrl}</span>
+                <button title="Salin Link" onclick="copyToClipboard('${displayUrl}')" class="ml-2 text-gray-400 hover:text-cyan-400 transition-colors">
+                    <svg class="w-4 h-4 inline-block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                            d="M8 16H6a2 2 0 01-2-2V6a2 2 0 
+                               012-2h8a2 2 0 012 2v2m-6 12h8a2 2 
+                               0 002-2v-8a2 2 0 00-2-2h-8a2 2 
+                               0 00-2 2v8a2 2 0 002 2z"></path>
+                    </svg>
+                </button>
+            </p>`;
+    } catch (error) {
+        console.error('Shorten error:', error);
+        localStorage.setItem(localStorageKey, 'failed');
+        showShortLinkFallback(userId);
+    }
+}
         // --- Event Listeners ---
         document.getElementById("go-to-register").addEventListener("click", e => { e.preventDefault(); loginForm.classList.add("hidden"); registerForm.classList.remove("hidden"); });
         document.getElementById("go-to-login").addEventListener("click", e => { e.preventDefault(); registerForm.classList.add("hidden"); loginForm.classList.remove("hidden"); });
